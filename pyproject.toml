@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "olm-excel"
+version = "0.0.1"
+description = "Outlook for Mac (OLM) archive to Excel converter"
+readme = "README.md"
+requires-python = ">=3.11"
+# Runtime dependencies are pinned exactly (N08). Change only with a reviewed PR.
+dependencies = [
+    "defusedxml==0.7.1",  # hardened XML parsing (06: XXE, entities)
+    "xlsxwriter==3.2.9",  # streaming XLSX writer with explicit string cells (F06)
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+    "openpyxl==3.1.5",  # test-only: read workbooks back; never used to write
+]
+
+[project.scripts]
+olm-excel = "olm_excel.interfaces.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

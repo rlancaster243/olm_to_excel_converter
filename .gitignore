@@ -71,3 +71,8 @@ Thumbs.db
 *.pem
 .env.local
 .env.*.local
+
+# OLM archives may contain private mail and contacts: never commit them.
+# The committed synthetic sample is the only exception (07 format corpus).
+*.olm
+!docs/samples/sample.olm
