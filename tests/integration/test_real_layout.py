@@ -200,6 +200,28 @@ def test_unknown_elements_and_attributes_go_to_raw_with_the_record_key(tmp_path:
     assert [r["Address"] for r in table_rows(wb, "contact_emails") if r["list_source"] == "OPFContactCopyIMAddressList"] == ["a@b.test"]
 
 
+def test_present_but_empty_scalars_are_listed_in_empty_fields(tmp_path: Path) -> None:  # E09, E12
+    exp = Expect()
+    # MiddleName: present, empty, with xml:space only (the real layout). Age: present, empty, bare (no attributes).
+    # NickName: present with text. Title: absent.
+    extra = f"<OPFContactCopyMiddleName{SP}/><OPFContactCopyAge/><OPFContactCopyNickName{SP}>Nick</OPFContactCopyNickName>"
+    xml = contacts_member(1, exp, "c.xml", picture_every=0, extra=extra)
+    exp.structural += 2  # xml:space on MiddleName and NickName; the bare Age element carries no attribute
+    result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}))
+
+    assert result.outcome is Outcome.SUCCESS and result.totals.raw == 0 and result.totals.lost == 0
+    t = result.totals
+    assert t.source_values == t.mapped + t.structural + t.raw + t.lost
+    reference = reference_values(xml)
+    assert t.source_values == len(reference)
+    assert t.structural == sum(1 for kind, attr, _ in reference if attr == XML_SPACE or attr == "elementCount") == exp.structural
+
+    (row,) = table_rows(wb, "contacts")
+    assert row["empty_fields"] == "Age; MiddleName"  # SCALAR_ELEMENTS order, not the order in the source
+    assert row["MiddleName"] == "" and row["NickName"] == "Nick" and row["Title"] == ""
+    assert "NickName" not in row["empty_fields"] and "Title" not in row["empty_fields"]
+
+
 def test_raw_extract_off_keeps_the_outcome_and_reports_lost(tmp_path: Path) -> None:  # T20
     exp = Expect()
     xml = contacts_member(1, exp, "c.xml", picture_every=0, extra=f'<OPFContactCopyPronouns{SP}>x</OPFContactCopyPronouns>')

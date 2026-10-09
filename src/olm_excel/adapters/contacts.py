@@ -118,7 +118,7 @@ _EXTENSIONS = {"jpeg": "jpg"}
 class _Record:
     ordinal: int
     scalars: dict[str, str] = field(default_factory=dict)
-    empty: list[str] = field(default_factory=list)
+    present: set[str] = field(default_factory=set)  # scalar tags whose element exists (EMPTY value or xml:space)
     primary: dict[str, str] = field(default_factory=dict)
     emails: dict[tuple[str, int], dict[str, str]] = field(default_factory=dict)
     categories: dict[int, dict[str, str]] = field(default_factory=dict)
@@ -222,6 +222,9 @@ class _Session:
         kind = value.value_kind
         attribute = kind is ValueKind.ATTRIBUTE
         if attribute and value.attribute == XML_SPACE and ctx.check_structural(value):
+            # The value stays structural. Its element still exists, which is how a present-but-empty scalar shows.
+            if len(segs) == 3 and segs[2][1] == 1 and segs[2][0] in COLUMNS:
+                rec.present.add(segs[2][0])
             return
         depth = len(segs)
         if depth == 3:
@@ -236,7 +239,7 @@ class _Session:
                 if tag in COLUMNS:
                     rec.scalars[tag] = value.value
                     if kind is ValueKind.EMPTY:
-                        rec.empty.append(COLUMNS[tag])
+                        rec.present.add(tag)
                     ctx.mapped(value)
                     return
         elif depth == 4:
@@ -272,11 +275,12 @@ class _Session:
         key = ctx.record_key(rec.ordinal)
         fit = self._fit
         cells = [fit(key, COLUMNS[e], rec.scalars.get(e, "")) for e in SCALAR_ELEMENTS]
+        empty = [COLUMNS[e] for e in SCALAR_ELEMENTS if e in rec.present and not rec.scalars.get(e)]
         a.contacts.append((
             key, ctx.member.path, str(rec.ordinal), *cells,
             fit(key, "PrimaryCategory_Name", rec.primary.get(CATEGORY_ATTRS[0], "")),
             fit(key, "PrimaryCategory_BackgroundColor", rec.primary.get(CATEGORY_ATTRS[1], "")),
-            "; ".join(rec.empty),
+            "; ".join(empty),
         ))
         for (container, idx), attrs in rec.emails.items():
             a.emails.append((
