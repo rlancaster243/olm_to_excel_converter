@@ -174,6 +174,58 @@ def test_invalid_xml_space_value_is_routed_to_raw(tmp_path: Path) -> None:  # T2
     assert result.outcome is Outcome.PARTIAL
 
 
+def test_preserved_indentation_is_reported_not_silently_dropped(tmp_path: Path) -> None:
+    """Newline+indent between fields under xml:space="preserve" is a source value (04), kept raw.
+
+    No export has shown this yet (E09 has no inter-element text). Until one does, it is not structural
+    (ADR-009), so it must be counted, routed to raw, never mapped or dropped, and the outcome must stay PARTIAL.
+    """
+    exp = Expect()
+    plain = contacts_member(3, exp, "c.xml", picture_every=0)
+    indented = plain.replace(b"><", b">\n    <")  # newline + indent between every pair of elements
+    whitespace = [v for v in reference_values(indented) if v[0] == "text" and not v[2].strip()]
+    assert whitespace  # the archive really carries inter-element whitespace under preserve
+
+    base_dir, ind_dir = tmp_path / "base", tmp_path / "indented"
+    base_dir.mkdir()
+    ind_dir.mkdir()
+    base, base_wb = run(base_dir, write_zip(base_dir / "a.olm", {"c.xml": plain}))
+    ind, ind_wb = run(ind_dir, write_zip(ind_dir / "a.olm", {"c.xml": indented}))
+
+    # Control: without the indentation the same archive is a clean SUCCESS, so the PARTIAL comes from the whitespace alone
+    assert base.error is None and base.outcome is Outcome.SUCCESS and base.totals.raw == 0
+
+    # Not a crash, never SUCCESS
+    assert ind.error is None and ind.outcome is Outcome.PARTIAL
+
+    # Counted: the indentation adds exactly the whitespace values, and the independent oracle agrees
+    t = ind.totals
+    assert t.source_values == len(reference_values(indented)) == base.totals.source_values + len(whitespace)
+    assert t.source_values == t.mapped + t.structural + t.raw + t.lost
+    assert ind.members[0].account.reconciles()
+
+    # Routed to raw with their record keys: not dropped, not mapped
+    assert t.raw == len(whitespace) > 0
+    raw = table_rows(ind_wb, "raw_0001")
+    assert len(raw) == len(whitespace)
+    assert all(r["value"] and not r["value"].strip() for r in raw)
+    # Whitespace inside a contact carries that contact's record key; whitespace between contacts (on the
+    # member root) belongs to no record and has none
+    inside = [r for r in raw if r["element_path"].startswith("/contacts[1]/contact[")]
+    between = [r for r in raw if r["element_path"] == "/contacts[1]"]
+    assert len(inside) + len(between) == len(raw) and all(r["record_key"] for r in inside) and not any(r["record_key"] for r in between)
+    assert manifest(ind_wb)["outcome"] == "PARTIAL" and manifest(ind_wb)["raw"] == str(len(whitespace))
+
+    # Mapped values and structural counts are unaffected by the indentation
+    assert (t.mapped, t.structural) == (base.totals.mapped, base.totals.structural)
+    assert [r["DisplayName"] for r in table_rows(ind_wb, "contacts")] == ["Person 1", "Person 2", "Person 3"]
+    for sheet in ("contacts", "contact_emails", "contact_categories", "contact_lists", "contact_pictures"):
+        a, b = table_rows(ind_wb, sheet), table_rows(base_wb, sheet)
+        assert [{k: v for k, v in r.items() if k != "record_key"} for r in a] == [{k: v for k, v in r.items() if k != "record_key"} for r in b]
+        # record keys carry a per-archive submission id; the part after it must match
+        assert [r["record_key"].split("/", 1)[1] for r in a] == [r["record_key"].split("/", 1)[1] for r in b]
+
+
 def test_declared_names_on_the_wrong_element_are_never_structural(tmp_path: Path) -> None:  # T28
     exp = Expect()
     xml = contacts_member(1, exp, "c.xml", extra='<OPFContactCopyTitle xml:space="preserve" elementCount="5">x</OPFContactCopyTitle>')
