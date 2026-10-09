@@ -77,8 +77,8 @@ Sheets: `raw_0001`, `raw_0002`, ... partitioned at the Excel row cap, plus `_raw
 Semantics:
 - Raw rows make no semantic claim. They are never promoted into family sheets, typed, or joined to canonical columns by the tool. Promotion happens only by building an adapter (ADR-007).
 - The outcome is decided by the field-level completeness rule (Completeness contract), from source values, not from whether raw rows were written. Turning raw extract off changes where unmapped values are reported (lost instead of raw), never the outcome.
-- PARTIAL and UNSUPPORTED results with a verified workbook are downloadable for assessment (02 decided acceptance choices). The UI shows the outcome state and mapped/raw/lost counts before download, and `_manifest` repeats them as its first rows, so the file never reads as a full conversion.
-- Manifest records `raw_extract` on/off, source values mapped/raw/lost per member, partitions and any `RAW_EXTRACT_LIMIT` stop.
+- PARTIAL and UNSUPPORTED results with a verified workbook are downloadable for assessment (02 decided acceptance choices). The UI shows the outcome state and mapped/structural/raw/lost counts before download, and `_manifest` repeats them as its first rows, so the file never reads as a full conversion.
+- Manifest records `raw_extract` on/off, source values mapped/structural/raw/lost per member, partitions and any `RAW_EXTRACT_LIMIT` stop.
 - Raw values are as sensitive as canonical values: same cell policy, same logging exclusions.
 - Binary payload values that an adapter declares (for example contact pictures) are never written as raw rows, since cells are not a binary store. They are mapped (exported as files) or lost with `PICTURE_NOT_EXPORTED`. Unclaimed members have no adapter to declare payloads, so their text goes raw verbatim.
 

@@ -42,7 +42,7 @@ Golden expected outputs are independently derived from real Outlook sample inspe
 | T22 | whitespace-only leaf text, `xml:space="preserve"`, empty element, element with attributes only | counted per 04 Source values; empty vs whitespace vs absent distinguishable in output |
 | T23 | value > 32,000 UTF-16 units containing astral characters, with a chunk starting with `=` | chunks ≤ 32,000 UTF-16 units, no split surrogate pair, concatenated chunks equal the source exactly, no executable formula |
 | T24 | adapter that under-reports mapped ordinals | core counts unchanged; unreported values routed to raw; outcome not SUCCESS |
-| T25 | download of PARTIAL and UNSUPPORTED results | download offered; UI shows outcome and mapped/raw/lost counts before download; `_manifest` first rows state the same; FAILED/CANCELLED offer no workbook |
+| T25 | download of PARTIAL and UNSUPPORTED results | download offered; UI shows outcome and mapped/structural/raw/lost counts before download; `_manifest` first rows state the same; FAILED/CANCELLED offer no workbook |
 | T26 | structural values: `xml:space` on every element, root `elementCount` equals the record count | structural counted separately; mapped + structural + raw + lost == source values; no structural value in any sheet |
 | T27 | `elementCount` wrong, or `xml:space` with a value other than preserve/default | value not structural; routed raw (or lost with raw off); `STRUCTURAL_MISMATCH` warning; outcome PARTIAL |
 | T28 | attribute named like a declaration on the wrong element, or with a different namespace | never structural; routed raw or lost |
