@@ -1,0 +1,13 @@
+streamlit
+pandas
+python-docx
+openpyxl
+odfpy
+pdfplumber
+pdf2docx
+pdf2image
+pytesseract
+Pillow
+nbformat
+mailbox
+markdown

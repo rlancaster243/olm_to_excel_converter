@@ -1,0 +1,372 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Converter + OLM-to-Excel Scope",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "current-path",
+        "label": "Current convert path",
+        "focus": [
+          "user",
+          "streamlit_ui",
+          "conversion_matrix",
+          "dispatch",
+          "converters",
+          "download"
+        ],
+        "note": "Observed monolith: dropdowns, matrix, if/elif dispatch, function, download or ZIP."
+      },
+      {
+        "id": "olm-addition",
+        "label": "Proposed OLM path",
+        "focus": [
+          "user",
+          "streamlit_ui",
+          "olm_module",
+          "zip_xml",
+          "row_builder",
+          "xlsx_writer",
+          "download"
+        ],
+        "note": "Separate-scope module: OLM ZIP and XML in, Excel and report out, thin UI wiring only."
+      },
+      {
+        "id": "risk-surface",
+        "label": "Risks and deps",
+        "focus": [
+          "streamlit_ui",
+          "dispatch",
+          "converters",
+          "olm_module",
+          "sys_deps"
+        ],
+        "note": "Missing packages, OCR system tools, upload and memory caps, and if/elif growth."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "Russell",
+      "sublabel": "Browser upload",
+      "pos": [
+        40,
+        280
+      ],
+      "size": [
+        120,
+        56
+      ]
+    },
+    {
+      "id": "streamlit_ui",
+      "type": "frontend",
+      "label": "Streamlit UI",
+      "sublabel": "selectbox + uploader",
+      "tag": "mbox_to_eml_app.py",
+      "pos": [
+        220,
+        280
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "conversion_matrix",
+      "type": "backend",
+      "label": "CONVERSION_MATRIX",
+      "sublabel": "from_ext \u2192 to_ext[]",
+      "pos": [
+        430,
+        160
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "dispatch",
+      "type": "backend",
+      "label": "if/elif Dispatch",
+      "sublabel": "22 elif branches",
+      "pos": [
+        430,
+        280
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "converters",
+      "type": "backend",
+      "label": "Converter Fns",
+      "sublabel": "23 defs, bytes in/out",
+      "pos": [
+        650,
+        280
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "download",
+      "type": "frontend",
+      "label": "Download",
+      "sublabel": "button or ZIP",
+      "pos": [
+        860,
+        280
+      ],
+      "size": [
+        130,
+        56
+      ]
+    },
+    {
+      "id": "olm_module",
+      "type": "backend",
+      "label": "olm_contacts",
+      "sublabel": "proposed module",
+      "tag": "separate scope",
+      "pos": [
+        430,
+        430
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "zip_xml",
+      "type": "backend",
+      "label": "ZIP + XML Parse",
+      "sublabel": "zipfile + ElementTree",
+      "pos": [
+        650,
+        430
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "row_builder",
+      "type": "backend",
+      "label": "Row Builder",
+      "sublabel": "union cols, escape",
+      "pos": [
+        650,
+        540
+      ],
+      "size": [
+        150,
+        56
+      ]
+    },
+    {
+      "id": "xlsx_writer",
+      "type": "database",
+      "label": "XLSX Writer",
+      "sublabel": "pandas + openpyxl",
+      "pos": [
+        860,
+        430
+      ],
+      "size": [
+        130,
+        64
+      ]
+    },
+    {
+      "id": "sys_deps",
+      "type": "external",
+      "label": "System Deps",
+      "sublabel": "Tesseract / Poppler",
+      "tag": "OCR only",
+      "pos": [
+        650,
+        160
+      ],
+      "size": [
+        150,
+        56
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Current monolith (Observed)",
+      "wraps": [
+        "streamlit_ui",
+        "conversion_matrix",
+        "dispatch",
+        "converters",
+        "download"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Proposed OLM scope (separate)",
+      "wraps": [
+        "olm_module",
+        "zip_xml",
+        "row_builder",
+        "xlsx_writer"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "user-upload",
+      "from": "user",
+      "to": "streamlit_ui",
+      "label": "upload file",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ui-matrix",
+      "from": "streamlit_ui",
+      "to": "conversion_matrix",
+      "label": "dropdown options",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "ui-dispatch",
+      "from": "streamlit_ui",
+      "to": "dispatch",
+      "label": "Convert click",
+      "variant": "emphasis",
+      "labelDy": 56
+    },
+    {
+      "id": "matrix-dispatch",
+      "from": "conversion_matrix",
+      "to": "dispatch",
+      "label": "valid pairs",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "dispatch-converters",
+      "from": "dispatch",
+      "to": "converters",
+      "label": "call pair fn",
+      "variant": "emphasis",
+      "labelDy": -26
+    },
+    {
+      "id": "converters-download",
+      "from": "converters",
+      "to": "download",
+      "label": "bytes / ZIP",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ocr-sys",
+      "from": "converters",
+      "to": "sys_deps",
+      "label": "pdf OCR",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "ui-olm",
+      "from": "streamlit_ui",
+      "to": "olm_module",
+      "label": "olm \u2192 xlsx (thin wire)",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "olm-parse",
+      "from": "olm_module",
+      "to": "zip_xml",
+      "label": "olm_bytes",
+      "variant": "dashed"
+    },
+    {
+      "id": "parse-rows",
+      "from": "zip_xml",
+      "to": "row_builder",
+      "label": "contacts XML",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "rows-xlsx",
+      "from": "row_builder",
+      "to": "xlsx_writer",
+      "label": "rows + report",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "bottom"
+    },
+    {
+      "id": "xlsx-download",
+      "from": "xlsx_writer",
+      "to": "download",
+      "label": "xlsx_bytes",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Headline verdict",
+      "items": [
+        "Separate scope recommended for OLM-to-Excel growth",
+        "In-place only for a contacts-only MVP with hard caps",
+        "Middle option: same-repo module with thin UI wire"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Current app (Observed)",
+      "items": [
+        "SHA 5abea14 (main tip 2025-06-05)",
+        "Single-file Streamlit; matrix + labels + if/elif + fns",
+        "Batch ZIP for images and mbox\u2192eml only",
+        "No shared text-cell safety or encoding helpers"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Flip to in-place only if",
+      "items": [
+        "Contacts-only forever; no column-mapping UI",
+        "No groups/calendar/mail; archives stay under ~200 MB",
+        "Real OLM nesting matches the synthetic sample"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Risks",
+      "items": [
+        "bs4 and markdownify used but missing from requirements",
+        "PyPI mailbox\u2260stdlib; OCR needs Poppler+Tesseract",
+        "Full-mailbox OLM can exceed upload and RAM limits"
+      ]
+    }
+  ]
+}
