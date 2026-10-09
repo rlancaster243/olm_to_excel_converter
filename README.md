@@ -9,7 +9,7 @@
 
 This repository will hold an **Outlook for Mac (OLM) → Excel** converter (contacts-first in early phases; broader record families described in the proposed [fidelity PRD](docs/fidelity/02-PRD-AND-ACCEPTANCE.md)), split from the [mbox_to_eml_converter](https://github.com/rlancaster243/mbox_to_eml_converter) monolith. Documentation, synthetic samples, and parent source snapshots live under **[docs/](docs/README.md)**.
 
-**Status:** W01 package skeleton. No conversion works yet; the CLI `convert` command exits with code 2.
+**Status:** W04 core in progress. The source-value walker, string-only XLSX writer, raw extractor and field-level completeness rule work on XML streams. The CLI `convert` command still exits with code 2: it is not wired to archives until the W02 archive guard exists.
 
 ## Development
 
@@ -21,9 +21,10 @@ python3 -m venv .venv
 .venv/bin/pytest
 ```
 
-Two tests are expected to fail until W04 lands. They are the first build targets:
+The full suite takes about a minute; most of that is one test that writes and re-reads all 241,487 sample values. Key oracles:
 
-- `tests/integration/test_source_value_count.py`: the core walker must count 241,487 source values in `docs/samples/sample.olm`.
-- `tests/unit/test_xlsx_cell_policy.py`: hostile values must round-trip exactly with no formula cells.
+- `tests/integration/test_source_value_count.py`: the walker counts 241,487 source values in `docs/samples/sample.olm`.
+- `tests/unit/test_xlsx_cell_policy.py`: hostile values round-trip exactly with no formula cells.
+- `tests/unit/test_walker.py`: the streaming walker matches a whole-document reference on randomized mixed content.
 
 Never commit `.olm` files other than the synthetic sample; `.gitignore` blocks them.
