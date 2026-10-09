@@ -65,7 +65,7 @@ Revisit: raw volume regularly exceeds limits, users report misreading raw output
 ## ADR-009 - Structural values
 Status: product owner selected "Yes (Recommended)" 2026-10-09, confirmed directly in the main session the same day; mechanics PROPOSED.
 Decision: an adapter may declare a closed list of source values as structural (`xml:space`, root `elementCount` for contacts v1). The core checks them with validators and counts them separately; they are not exported.
-Benefit: a real export carries `xml:space` on 575,912 of 1,172,223 values (E09). Exporting them is noise and treating them as lost would make every conversion PARTIAL, which hides real loss behind a permanent warning.
+Benefit: a real export carries `xml:space` on 577,741 of 1,176,094 source values across its four members (E09; the largest member alone carries it on 575,912 of 1,172,223). Exporting them is noise and treating them as lost would make every conversion PARTIAL, which hides real loss behind a permanent warning.
 Cost: a new place for loss to hide. Controls: closed declarations with evidence, validators run by the core, per-declaration counts in the manifest, a failed check routes the value to raw or lost.
 Assumption: these attributes carry no record data in contacts exports.
 Revisit: any declaration that matches a value carrying record data, or a variant where `elementCount` disagrees with the record count in an otherwise valid export.
