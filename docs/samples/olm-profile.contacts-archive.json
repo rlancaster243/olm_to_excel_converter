@@ -1,0 +1,1235 @@
+{
+  "tool": "olm-excel 0.0.1 profile",
+  "contains_values": false,
+  "names_redacted": true,
+  "input": {
+    "bytes": 73870643,
+    "sha256": "10b7a8ca870622d0fe05deb85b0a555ee111cad4e9fdf4e597ada81a4c1553f4",
+    "container": "zip",
+    "members": 4
+  },
+  "unsafe_member_names": 0,
+  "member_groups": [
+    {
+      "member_pattern": "Accounts/~b0b9af/Contacts/Contacts.xml",
+      "members": 1,
+      "bytes_uncompressed": 73636197,
+      "bytes_compressed": 73636197,
+      "max_compression_ratio": 1.0,
+      "types": {
+        "xml": 1
+      },
+      "xml": {
+        "members_parsed": 1,
+        "source_values": 1172223,
+        "roots": {
+          "/contacts": 1
+        },
+        "namespaces": [
+          "http://www.w3.org/XML/1998/namespace"
+        ],
+        "max_depth": 4,
+        "paths": {
+          "/contacts": {
+            "elements": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1,
+              "elementCount": 1
+            }
+          },
+          "/contacts/contact": {
+            "elements": 19634,
+            "max_sibling_index": 19634,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 19634
+            }
+          },
+          "/contacts/contact/OPFContactAddPicture": {
+            "elements": 187,
+            "text_values": 187,
+            "values_over_cell_cap": 12,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 187
+            }
+          },
+          "/contacts/contact/OPFContactAddPictureType": {
+            "elements": 187,
+            "text_values": 187,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 187
+            }
+          },
+          "/contacts/contact/OPFContactCanDelete": {
+            "elements": 19634,
+            "text_values": 19634,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 19634
+            }
+          },
+          "/contacts/contact/OPFContactCanEdit": {
+            "elements": 19634,
+            "text_values": 19634,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 19634
+            }
+          },
+          "/contacts/contact/OPFContactCopyAge": {
+            "elements": 150,
+            "text_values": 150,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 150
+            }
+          },
+          "/contacts/contact/OPFContactCopyAnniversary": {
+            "elements": 10,
+            "text_values": 10,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 10
+            }
+          },
+          "/contacts/contact/OPFContactCopyAssistantPhone": {
+            "elements": 14,
+            "text_values": 14,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 14
+            }
+          },
+          "/contacts/contact/OPFContactCopyBirthday": {
+            "elements": 150,
+            "text_values": 150,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 150
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessCity": {
+            "elements": 11568,
+            "text_values": 11568,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 11568
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessCompany": {
+            "elements": 14641,
+            "text_values": 14641,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 14641
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessCountry": {
+            "elements": 7945,
+            "text_values": 7945,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 7945
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessDepartment": {
+            "elements": 591,
+            "text_values": 591,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 591
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessFax": {
+            "elements": 3634,
+            "text_values": 3634,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 3634
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessHomePage": {
+            "elements": 4524,
+            "text_values": 4524,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 4524
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessOffice": {
+            "elements": 337,
+            "text_values": 337,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 337
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessPhone": {
+            "elements": 11881,
+            "text_values": 11881,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 11881
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessPhone2": {
+            "elements": 573,
+            "text_values": 573,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 573
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessState": {
+            "elements": 10992,
+            "text_values": 10992,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 10992
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessStreetAddress": {
+            "elements": 11391,
+            "text_values": 11391,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 11391
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessTitle": {
+            "elements": 12489,
+            "text_values": 12489,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 12489
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessZip": {
+            "elements": 10688,
+            "text_values": 10688,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 10688
+            }
+          },
+          "/contacts/contact/OPFContactCopyCategoryList": {
+            "elements": 18332,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 18332
+            }
+          },
+          "/contacts/contact/OPFContactCopyCategoryList/category": {
+            "elements": 37188,
+            "max_sibling_index": 9,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 37188,
+              "OPFCategoryCopyBackgroundColor": 37188,
+              "OPFCategoryCopyName": 37188
+            }
+          },
+          "/contacts/contact/OPFContactCopyCellPhone": {
+            "elements": 8562,
+            "text_values": 8562,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 8562
+            }
+          },
+          "/contacts/contact/OPFContactCopyChildren": {
+            "elements": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyChildren/string": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyContactImage": {
+            "elements": 19634,
+            "text_values": 19634,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 19634
+            }
+          },
+          "/contacts/contact/OPFContactCopyDefaultEmailAddress": {
+            "elements": 15003,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 15003
+            }
+          },
+          "/contacts/contact/OPFContactCopyDefaultEmailAddress/contactEmailAddress": {
+            "elements": 15003,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 15003,
+              "OPFContactEmailAddressAddress": 15003,
+              "OPFContactEmailAddressIsDefault": 15003,
+              "OPFContactEmailAddressType": 15003
+            }
+          },
+          "/contacts/contact/OPFContactCopyDefaultIMAddress": {
+            "elements": 534,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 534
+            }
+          },
+          "/contacts/contact/OPFContactCopyDefaultIMAddress/contactEmailAddress": {
+            "elements": 534,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 534,
+              "OPFContactEmailAddressAddress": 534,
+              "OPFContactEmailAddressIsDefault": 534,
+              "OPFContactEmailAddressType": 534
+            }
+          },
+          "/contacts/contact/OPFContactCopyDisplayName": {
+            "elements": 19634,
+            "text_values": 19634,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 19634
+            }
+          },
+          "/contacts/contact/OPFContactCopyEmailAddressList": {
+            "elements": 15003,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 15003
+            }
+          },
+          "/contacts/contact/OPFContactCopyEmailAddressList/contactEmailAddress": {
+            "elements": 17753,
+            "max_sibling_index": 3,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 17753,
+              "OPFContactEmailAddressAddress": 17753,
+              "OPFContactEmailAddressIsDefault": 17753,
+              "OPFContactEmailAddressType": 17753
+            }
+          },
+          "/contacts/contact/OPFContactCopyEmailAddressList1": {
+            "elements": 2399,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 2399
+            }
+          },
+          "/contacts/contact/OPFContactCopyEmailAddressList1/contactEmailAddress": {
+            "elements": 2399,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 2399,
+              "OPFContactEmailAddressAddress": 2399,
+              "OPFContactEmailAddressIsDefault": 2399,
+              "OPFContactEmailAddressType": 2399
+            }
+          },
+          "/contacts/contact/OPFContactCopyEmailAddressList2": {
+            "elements": 351,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 351
+            }
+          },
+          "/contacts/contact/OPFContactCopyEmailAddressList2/contactEmailAddress": {
+            "elements": 351,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 351,
+              "OPFContactEmailAddressAddress": 351,
+              "OPFContactEmailAddressIsDefault": 351,
+              "OPFContactEmailAddressType": 351
+            }
+          },
+          "/contacts/contact/OPFContactCopyFirstName": {
+            "elements": 19383,
+            "text_values": 19383,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 19383
+            }
+          },
+          "/contacts/contact/OPFContactCopyFuriganaChildrensNames": {
+            "elements": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyFuriganaChildrensNames/string": {
+            "elements": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyFuriganaFirstName": {
+            "elements": 4,
+            "text_values": 4,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 4
+            }
+          },
+          "/contacts/contact/OPFContactCopyFuriganaLastName": {
+            "elements": 4,
+            "text_values": 4,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 4
+            }
+          },
+          "/contacts/contact/OPFContactCopyHomeCity": {
+            "elements": 1261,
+            "text_values": 1261,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1261
+            }
+          },
+          "/contacts/contact/OPFContactCopyHomeCountry": {
+            "elements": 935,
+            "text_values": 935,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 935
+            }
+          },
+          "/contacts/contact/OPFContactCopyHomeFax": {
+            "elements": 21,
+            "text_values": 21,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 21
+            }
+          },
+          "/contacts/contact/OPFContactCopyHomePhone": {
+            "elements": 1670,
+            "text_values": 1670,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1670
+            }
+          },
+          "/contacts/contact/OPFContactCopyHomePhone2": {
+            "elements": 39,
+            "text_values": 39,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 39
+            }
+          },
+          "/contacts/contact/OPFContactCopyHomeState": {
+            "elements": 1042,
+            "text_values": 1042,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1042
+            }
+          },
+          "/contacts/contact/OPFContactCopyHomeStreetAddress": {
+            "elements": 1294,
+            "text_values": 1294,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1294
+            }
+          },
+          "/contacts/contact/OPFContactCopyHomeWebPage": {
+            "elements": 6,
+            "text_values": 6,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 6
+            }
+          },
+          "/contacts/contact/OPFContactCopyHomeZip": {
+            "elements": 1214,
+            "text_values": 1214,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1214
+            }
+          },
+          "/contacts/contact/OPFContactCopyIMAddressList": {
+            "elements": 534,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 534
+            }
+          },
+          "/contacts/contact/OPFContactCopyIMAddressList/contactEmailAddress": {
+            "elements": 628,
+            "max_sibling_index": 3,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 628,
+              "OPFContactEmailAddressAddress": 628,
+              "OPFContactEmailAddressIsDefault": 628,
+              "OPFContactEmailAddressType": 628
+            }
+          },
+          "/contacts/contact/OPFContactCopyLastName": {
+            "elements": 19334,
+            "text_values": 19334,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 19334
+            }
+          },
+          "/contacts/contact/OPFContactCopyMiddleName": {
+            "elements": 832,
+            "text_values": 832,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 832
+            }
+          },
+          "/contacts/contact/OPFContactCopyModDate": {
+            "elements": 19634,
+            "text_values": 19634,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 19634
+            }
+          },
+          "/contacts/contact/OPFContactCopyNickName": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyNotes": {
+            "elements": 19634,
+            "text_values": 19634,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 19634
+            }
+          },
+          "/contacts/contact/OPFContactCopyNotesPlain": {
+            "elements": 19634,
+            "text_values": 19634,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 19634
+            }
+          },
+          "/contacts/contact/OPFContactCopyOtherCity": {
+            "elements": 156,
+            "text_values": 156,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 156
+            }
+          },
+          "/contacts/contact/OPFContactCopyOtherCountry": {
+            "elements": 154,
+            "text_values": 154,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 154
+            }
+          },
+          "/contacts/contact/OPFContactCopyOtherPhone": {
+            "elements": 157,
+            "text_values": 157,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 157
+            }
+          },
+          "/contacts/contact/OPFContactCopyOtherState": {
+            "elements": 149,
+            "text_values": 149,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 149
+            }
+          },
+          "/contacts/contact/OPFContactCopyOtherStreetAddress": {
+            "elements": 162,
+            "text_values": 162,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 162
+            }
+          },
+          "/contacts/contact/OPFContactCopyOtherZip": {
+            "elements": 141,
+            "text_values": 141,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 141
+            }
+          },
+          "/contacts/contact/OPFContactCopyPager": {
+            "elements": 38,
+            "text_values": 38,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 38
+            }
+          },
+          "/contacts/contact/OPFContactCopyPrimaryCategory": {
+            "elements": 18332,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 18332
+            }
+          },
+          "/contacts/contact/OPFContactCopyPrimaryCategory/OPFCategoryCopyBackgroundColor": {
+            "elements": 18332,
+            "text_values": 18332,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 18332
+            }
+          },
+          "/contacts/contact/OPFContactCopyPrimaryCategory/OPFCategoryCopyName": {
+            "elements": 18332,
+            "text_values": 18332,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 18332
+            }
+          },
+          "/contacts/contact/OPFContactCopyRadioPhone": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopySetNameSuffix": {
+            "elements": 157,
+            "text_values": 157,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 157
+            }
+          },
+          "/contacts/contact/OPFContactCopySpousesName": {
+            "elements": 378,
+            "text_values": 378,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 378
+            }
+          },
+          "/contacts/contact/OPFContactCopyTitle": {
+            "elements": 235,
+            "text_values": 235,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 235
+            }
+          },
+          "/contacts/contact/OPFContactExchangeID": {
+            "elements": 19634,
+            "text_values": 19634,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 19634
+            }
+          },
+          "/contacts/contact/OPFContactGetFlagStatus": {
+            "elements": 19634,
+            "text_values": 19634,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 19634
+            }
+          },
+          "/contacts/contact/OPFContactIsJapaneseContact": {
+            "elements": 19634,
+            "text_values": 19634,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 19634
+            }
+          },
+          "/contacts/contact/OPFContactMainPhone": {
+            "elements": 9,
+            "text_values": 9,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 9
+            }
+          },
+          "/contacts/contact/OPFContactType": {
+            "elements": 19634,
+            "text_values": 19634,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 19634
+            }
+          }
+        }
+      }
+    },
+    {
+      "member_pattern": "Accounts/~b0b9af/Contacts/~9ed3a6/Contacts.xml",
+      "members": 1,
+      "bytes_uncompressed": 203634,
+      "bytes_compressed": 203634,
+      "max_compression_ratio": 1.0,
+      "types": {
+        "xml": 1
+      },
+      "xml": {
+        "members_parsed": 1,
+        "source_values": 3231,
+        "roots": {
+          "/contacts": 1
+        },
+        "namespaces": [
+          "http://www.w3.org/XML/1998/namespace"
+        ],
+        "max_depth": 4,
+        "paths": {
+          "/contacts": {
+            "elements": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1,
+              "elementCount": 1
+            }
+          },
+          "/contacts/contact": {
+            "elements": 56,
+            "max_sibling_index": 56,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactCanDelete": {
+            "elements": 56,
+            "text_values": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactCanEdit": {
+            "elements": 56,
+            "text_values": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessCity": {
+            "elements": 32,
+            "text_values": 32,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 32
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessCompany": {
+            "elements": 47,
+            "text_values": 47,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 47
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessCountry": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessDepartment": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessHomePage": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessPhone": {
+            "elements": 52,
+            "text_values": 52,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 52
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessPhone2": {
+            "elements": 25,
+            "text_values": 25,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 25
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessState": {
+            "elements": 32,
+            "text_values": 32,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 32
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessStreetAddress": {
+            "elements": 34,
+            "text_values": 34,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 34
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessTitle": {
+            "elements": 53,
+            "text_values": 53,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 53
+            }
+          },
+          "/contacts/contact/OPFContactCopyBusinessZip": {
+            "elements": 32,
+            "text_values": 32,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 32
+            }
+          },
+          "/contacts/contact/OPFContactCopyCategoryList": {
+            "elements": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactCopyCategoryList/category": {
+            "elements": 112,
+            "max_sibling_index": 2,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 112,
+              "OPFCategoryCopyBackgroundColor": 112,
+              "OPFCategoryCopyName": 112
+            }
+          },
+          "/contacts/contact/OPFContactCopyCellPhone": {
+            "elements": 27,
+            "text_values": 27,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 27
+            }
+          },
+          "/contacts/contact/OPFContactCopyContactImage": {
+            "elements": 56,
+            "text_values": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactCopyDefaultEmailAddress": {
+            "elements": 31,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 31
+            }
+          },
+          "/contacts/contact/OPFContactCopyDefaultEmailAddress/contactEmailAddress": {
+            "elements": 31,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 31,
+              "OPFContactEmailAddressAddress": 31,
+              "OPFContactEmailAddressIsDefault": 31,
+              "OPFContactEmailAddressType": 31
+            }
+          },
+          "/contacts/contact/OPFContactCopyDisplayName": {
+            "elements": 56,
+            "text_values": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactCopyEmailAddressList": {
+            "elements": 31,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 31
+            }
+          },
+          "/contacts/contact/OPFContactCopyEmailAddressList/contactEmailAddress": {
+            "elements": 32,
+            "max_sibling_index": 2,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 32,
+              "OPFContactEmailAddressAddress": 32,
+              "OPFContactEmailAddressIsDefault": 32,
+              "OPFContactEmailAddressType": 32
+            }
+          },
+          "/contacts/contact/OPFContactCopyEmailAddressList1": {
+            "elements": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyEmailAddressList1/contactEmailAddress": {
+            "elements": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1,
+              "OPFContactEmailAddressAddress": 1,
+              "OPFContactEmailAddressIsDefault": 1,
+              "OPFContactEmailAddressType": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyFirstName": {
+            "elements": 56,
+            "text_values": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactCopyHomeWebPage": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyLastName": {
+            "elements": 56,
+            "text_values": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactCopyModDate": {
+            "elements": 56,
+            "text_values": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactCopyNotes": {
+            "elements": 56,
+            "text_values": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactCopyNotesPlain": {
+            "elements": 56,
+            "text_values": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactCopyPrimaryCategory": {
+            "elements": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactCopyPrimaryCategory/OPFCategoryCopyBackgroundColor": {
+            "elements": 56,
+            "text_values": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactCopyPrimaryCategory/OPFCategoryCopyName": {
+            "elements": 56,
+            "text_values": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactCopySpousesName": {
+            "elements": 16,
+            "text_values": 16,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 16
+            }
+          },
+          "/contacts/contact/OPFContactCopyTitle": {
+            "elements": 9,
+            "text_values": 9,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 9
+            }
+          },
+          "/contacts/contact/OPFContactExchangeID": {
+            "elements": 56,
+            "text_values": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactGetFlagStatus": {
+            "elements": 56,
+            "text_values": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactIsJapaneseContact": {
+            "elements": 56,
+            "text_values": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          },
+          "/contacts/contact/OPFContactType": {
+            "elements": 56,
+            "text_values": 56,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 56
+            }
+          }
+        }
+      }
+    },
+    {
+      "member_pattern": "Categories.xml",
+      "members": 1,
+      "bytes_uncompressed": 27109,
+      "bytes_compressed": 27109,
+      "max_compression_ratio": 1.0,
+      "types": {
+        "xml": 1
+      },
+      "xml": {
+        "members_parsed": 1,
+        "source_values": 607,
+        "roots": {
+          "/categories": 1
+        },
+        "namespaces": [
+          "http://www.w3.org/XML/1998/namespace"
+        ],
+        "max_depth": 2,
+        "paths": {
+          "/categories": {
+            "elements": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "elementCount": 1
+            }
+          },
+          "/categories/category": {
+            "elements": 202,
+            "max_sibling_index": 202,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 202,
+              "OPFCategoryCopyBackgroundColor": 202,
+              "OPFCategoryCopyName": 202
+            }
+          }
+        }
+      }
+    },
+    {
+      "member_pattern": "Local/Address Book/Contacts.xml",
+      "members": 1,
+      "bytes_uncompressed": 1395,
+      "bytes_compressed": 1395,
+      "max_compression_ratio": 1.0,
+      "types": {
+        "xml": 1
+      },
+      "xml": {
+        "members_parsed": 1,
+        "source_values": 33,
+        "roots": {
+          "/contacts": 1
+        },
+        "namespaces": [
+          "http://www.w3.org/XML/1998/namespace"
+        ],
+        "max_depth": 4,
+        "paths": {
+          "/contacts": {
+            "elements": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1,
+              "elementCount": 1
+            }
+          },
+          "/contacts/contact": {
+            "elements": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCanDelete": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCanEdit": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyContactImage": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyDefaultEmailAddress": {
+            "elements": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyDefaultEmailAddress/contactEmailAddress": {
+            "elements": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1,
+              "OPFContactEmailAddressAddress": 1,
+              "OPFContactEmailAddressIsDefault": 1,
+              "OPFContactEmailAddressType": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyDisplayName": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyEmailAddressList": {
+            "elements": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyEmailAddressList/contactEmailAddress": {
+            "elements": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1,
+              "OPFContactEmailAddressAddress": 1,
+              "OPFContactEmailAddressIsDefault": 1,
+              "OPFContactEmailAddressType": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyFirstName": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyLastName": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactCopyModDate": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactGetFlagStatus": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactIsJapaneseContact": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          },
+          "/contacts/contact/OPFContactType": {
+            "elements": 1,
+            "text_values": 1,
+            "max_sibling_index": 1,
+            "attributes": {
+              "{http://www.w3.org/XML/1998/namespace}space": 1
+            }
+          }
+        }
+      }
+    }
+  ],
+  "totals": {
+    "member_groups": 4,
+    "xml_members_parsed": 4,
+    "source_values": 1176094
+  }
+}
