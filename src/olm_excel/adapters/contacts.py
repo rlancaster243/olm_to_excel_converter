@@ -272,7 +272,9 @@ class _Session:
                     rec.categories.setdefault(child_idx, {})[value.attribute] = value.value
                     ctx.mapped(value)
                     return
-                if container == PRIMARY_CATEGORY and child in CATEGORY_ATTRS and child_idx == 1 and not attribute:
+                if container == PRIMARY_CATEGORY and child in CATEGORY_ATTRS and child_idx == 1 and not attribute and (
+                    kind is ValueKind.EMPTY or value.text_position == 0
+                ):  # text after a child element is unknown, never an overwrite
                     rec.primary[child] = value.value
                     ctx.mapped(value)
                     return
@@ -293,7 +295,8 @@ class _Session:
         key = ctx.record_key(rec.ordinal)
         fit = self._fit
         cells = [fit(key, COLUMNS[e], rec.scalars.get(e, "")) for e in SCALAR_ELEMENTS]
-        empty = [COLUMNS[e] for e in SCALAR_ELEMENTS if e in rec.present and not rec.scalars.get(e)]
+        routed = {CONTACT_IMAGE} if rec.image_fields else set()  # went to contact_pictures, so not empty
+        empty = [COLUMNS[e] for e in SCALAR_ELEMENTS if e in rec.present and e not in routed and not rec.scalars.get(e)]
         a.contacts.append((
             key, ctx.member.path, str(rec.ordinal), *cells,
             fit(key, "PrimaryCategory_Name", rec.primary.get(CATEGORY_ATTRS[0], "")),

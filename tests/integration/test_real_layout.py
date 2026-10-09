@@ -601,3 +601,33 @@ def test_cli_prints_the_picture_only_message(tmp_path: Path, built, capsys: pyte
     out = capsys.readouterr().out
     assert code == 3
     assert f"PARTIAL only because {exp.pictures} contact pictures were not exported." in out
+
+
+def test_a_contact_image_routed_to_pictures_is_not_listed_as_empty(tmp_path: Path) -> None:  # F3 x F8
+    exp = Expect()
+    xml = contacts_member(1, exp, "c.xml", picture_every=0, contact_image=PIC)
+    result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}), export_images=True)
+    (contact,) = table_rows(wb, "contacts")
+    assert contact["ContactImage"] == ""
+    assert "ContactImage" not in contact["empty_fields"].split("; ")
+    assert [r["source_element"] for r in table_rows(wb, "contact_pictures")] == ["OPFContactCopyContactImage"]
+    assert result.outcome is Outcome.SUCCESS
+
+
+def test_primary_category_text_after_a_child_element_is_unknown_not_overwritten(tmp_path: Path) -> None:
+    exp = Expect()
+    extra = (
+        f"<OPFContactCopyPrimaryCategory{SP}><OPFCategoryCopyName{SP}>first<b/>second</OPFCategoryCopyName>"
+        f"</OPFContactCopyPrimaryCategory>"
+    )
+    xml = contacts_member(1, exp, "c.xml", picture_every=0, extra=extra)
+    xml = xml.replace(b"<OPFContactCopyPrimaryCategory", b"<OPFContactCopyPrimaryCategoryX", 1).replace(
+        b"</OPFContactCopyPrimaryCategory>", b"</OPFContactCopyPrimaryCategoryX>", 1
+    )  # drop the helper's own primary category so only the test's container remains
+    result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}))
+    (contact,) = table_rows(wb, "contacts")
+    raw_values = {r["value"] for r in table_rows(wb, "raw_0001")}
+    assert contact["PrimaryCategory_Name"] == "first"
+    assert "second" in raw_values  # kept, never silently overwritten
+    assert result.outcome is Outcome.PARTIAL
+    assert result.totals.source_values == result.totals.mapped + result.totals.structural + result.totals.raw + result.totals.lost

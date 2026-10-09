@@ -10,12 +10,14 @@ segments, NUL or control characters, over-long names, duplicate names, and
 symbolic links. Resource limits (RESOURCE_LIMIT): entry count, total and
 per-member uncompressed size, per-member compression ratio.
 
-The default limits are deliberately tight placeholders sized from one real export
-(74 MB largest member, stored uncompressed, 4 members): it is safer to reject a
-legitimate outlier, which the operator can allow explicitly (``--max-member-gib``,
-``--max-ratio``), than to spend CPU on a hostile file. They are to be set from
-measurements on larger archives (W08). There is no wall-clock parse limit yet (N03). Nested archives are inventoried by type
-and never opened.
+The default limits are placeholders, not a calibrated ZIP-bomb defense (09
+Runbook 7). They are far above the one real export seen (74 MB largest member,
+stored uncompressed): 2 GiB per member is about 28 times that member, so they
+bound the work a hostile archive can cause rather than catch every one; the
+compression ratio cap is the main early guard. Rejecting a legitimate outlier
+is still the cheaper error, and the operator can allow one explicitly
+(``--max-member-gib``, ``--max-ratio``). There is no wall-clock parse limit yet
+(N03, W08). Nested archives are inventoried by type and never opened.
 """
 
 from __future__ import annotations
