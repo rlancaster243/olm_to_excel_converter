@@ -22,12 +22,16 @@ Published matrix by Outlook export version / observed schema fingerprint / famil
 Initial entries:
 - E01 [OBSERVED] current repo is documentation/synthetic before code.
 - E02 [OBSERVED] synthetic OLM contains single guessed contact XML path.
-- E03 [OPEN] real vendor OLM structures unvalidated.
+- E03 [OPEN] real vendor OLM structures unvalidated. Partly resolved by E09 for one export; other variants and record families remain unvalidated.
 - E04 [PROPOSED] standalone local-first adapter architecture.
 - E05 [OPEN] benchmark and security limits unqualified for this implementation.
 - E06 [CONTRADICTION in decision context] original parent-module recommendation vs newly requested standalone scope; resolve by explicit ADR-001 approval.
 - E07 [OBSERVED] 2026-10-09 throwaway check on `sample.olm` (not committed): a hardcoded-path parser returned 20,000 contacts and 0 emails when `emailAddress` was renamed, and 0 contacts when a root namespace was added, while a schema-agnostic walker counted 241,487 raw values in all three variants. Motivates T17/T18 and ADR-008.
 - E08 [PROPOSED] default-on raw extract contract (ADR-008); default-on itself accepted by product owner 2026-10-09.
+- E09 [OBSERVED] 2026-10-09 structure report from `olm-excel profile` on the product owner's own export (73,870,643 bytes, sha256 10b7a8ca...1553f4, Outlook build unknown; source `docs/samples/olm-profile.contacts-archive.json`, PR #5). Contacts-only: 4 members stored uncompressed; contacts members with 19,634, 56 and 1 contacts; `Categories.xml` with 202 categories; 1,176,094 source values; 83 distinct element paths. Every element carries `xml:space` except `/categories`; roots carry `elementCount`; `contactEmailAddress` appears in six containers. Contents were never read by the model. Uncertainty: one export, one Outlook version. Invalidation trigger: any export with a different structure. Next test: Q2 real-archive count check.
+- E10 [OBSERVED] `OPFContactAddPicture` has 187 values, 12 over the Excel cell cap. [INFERRED] base64 image text; encoding not verified against a real value.
+- E11 [CONFIRMED] product owner selections 2026-10-09, relayed verbatim through a second Claude session: structural values "Yes (Recommended)", pictures "Metadata + image files (Recommended)", dates "Keep as text (Recommended)". Recorded as ADR-009 to ADR-011 and 02.
+- E12 [OPEN] not established by E09: whether `DefaultEmailAddress` entries duplicate list entries; what `OPFContactCopyContactImage` holds; whether `ExchangeID` is stable across exports (U07); how `OPFContactAddPictureType` pairs with pictures; date formats; behavior of other Outlook versions (U01).
 
 ## Material reconciliation triggers
 New fixture contradicts schema hypothesis; parser produces orphan/omitted record; field mapping changes meaning; security boundary changes; coverage count fails; memory/cost materially exceeds requirement; client reports missing record family; owner revises PRD. Record first invalid artifact, impacted dependents and required retest.

@@ -23,9 +23,17 @@ A source value is the unit of field-level completeness, shared by adapters, the 
 - an empty element: no attributes, no children and no text at all (`value_kind=empty`, so absent and empty stay distinguishable).
 An element with attributes but no content yields only its attribute values. Each source value has a `node_ordinal` in document order within its member, assigned by the core walker.
 
+## Structural values (ADR-009)
+Some source values are format bookkeeping, not record data. An adapter may declare a closed list of structural declarations in its registry entry. Each declaration names an element path pattern and attribute, a validator, and the evidence that justified it. The core, not the adapter, evaluates declarations and counts the values.
+- A source value is `structural` only if it matches a declaration and its validator passes. Structural values are checked, not exported: they appear in no family sheet and no raw sheet. The manifest lists each declaration with the number of values it consumed and the number that failed.
+- A value that matches a declaration but fails validation is not structural. It is routed as raw or lost, so the outcome is PARTIAL, and a `STRUCTURAL_MISMATCH` warning names the declaration and member (never the value).
+- Anything that matches no declaration is never structural. Declaring a value structural when it carries record data (names, addresses, dates, identifiers, free text) needs its own ADR.
+- Contacts v1 declarations (evidence E09): (1) `xml:space` on any element, valid values `preserve` and `default`; (2) `elementCount` on the root `contacts` or `categories` element, valid when it is an integer equal to the number of child records parsed in that member, checked when the member ends (if it fails, that one value is routed raw or lost).
+- `xml:space="preserve"` still changes which whitespace text counts as a source value (see Source values). Structural status concerns only the attribute value itself.
+
 ## Canonical envelope (not Excel sheet grain)
 - `source_archive_sha256`, `archive_submission_id`, `archive_member_path`, `source_record_locator`, `source_record_id_if_present`.
-- `family` = contact|message|event|task|note|group|attachment_metadata|unknown.
+- `family` = contact|category|message|event|task|note|group|attachment_metadata|unknown.
 - `adapter_id/version`, `schema_fingerprint`, `record_ordinal`, `extraction_status`.
 - `fields: Map[str, TypedValue|List[TypedValue]]`; `unknown_fields` lists the record's source values the adapter did not map, each with `node_ordinal`, `element_path`, attribute name, `value_kind` and literal value as supplied by the core walker. A bare manifest reference without the literal value is not allowed.
 - `time_properties`: original text, source timezone/offset if present, parsed ISO representation only when unambiguous.
@@ -71,35 +79,61 @@ Semantics:
 - PARTIAL and UNSUPPORTED results with a verified workbook are downloadable for assessment (02 decided acceptance choices). The UI shows the outcome state and mapped/raw/lost counts before download, and `_manifest` repeats them as its first rows, so the file never reads as a full conversion.
 - Manifest records `raw_extract` on/off, source values mapped/raw/lost per member, partitions and any `RAW_EXTRACT_LIMIT` stop.
 - Raw values are as sensitive as canonical values: same cell policy, same logging exclusions.
+- Binary payload values that an adapter declares (for example contact pictures) are never written as raw rows, since cells are not a binary store. They are mapped (exported as files) or lost with `PICTURE_NOT_EXPORTED`. Unclaimed members have no adapter to declare payloads, so their text goes raw verbatim.
 
 Limits: the extractor uses the same hardened streaming parser, depth limits and quotas as adapters. A configurable `raw_extract_max_values` per archive caps raw rows. When the cap is reached partway through a member, that member is marked `raw_complete=false` with stop reason `RAW_EXTRACT_LIMIT`; every later unclaimed member still gets an `_raw_index` row with values written 0, `raw_complete=false`, stop reason `RAW_EXTRACT_LIMIT` and source values `uncounted` if it was not walked. No member drops out of the index. A malformed member keeps rows emitted before the parse error, is marked `raw_complete=false` and raises `RECORD_PARSE_ERROR`.
 
+## Contacts v1 sheet contract (provisional, evidence E09)
+Derived from one real export, Outlook version unknown. Adapters are selected by content, never by path or file name.
+- `contacts-olm-v1` claims an XML member whose root is `contacts`, whose record elements are `contact`, and whose record children are named `OPFContact*`.
+- `categories-olm-v1` claims an XML member whose root is `categories` and whose record elements are `category` with attributes `OPFCategoryCopyName` and `OPFCategoryCopyBackgroundColor`.
+- Any element or attribute under a claimed record that is not listed below is an unknown field: it is written as a raw row linked by `record_key`, and the outcome is PARTIAL. Nothing is guessed.
+
+Identity: `record_key = <first 12 hex of archive sha256>/<member ordinal>/<record ordinal>`. `ExchangeID` appears on every contact in E09, but its stability across exports is unproven (U07), so it is a column, not the key.
+
+Sheets:
+- `contacts`: one row per `contact`, across all contacts members (E09 had three). Columns: `record_key`, `source_member`, `contact_ordinal`, the 56 scalar columns below, `PrimaryCategory_Name`, `PrimaryCategory_BackgroundColor`, `empty_fields`. A scalar column name is the element name with a leading `OPFContactCopy` removed, else a leading `OPFContact` removed (`OPFContactCopyFirstName` becomes `FirstName`, `OPFContactExchangeID` becomes `ExchangeID`); if two names would collide, the verbatim element names are used. `empty_fields` lists scalar fields that are present but empty, since a blank cell cannot tell empty from absent.
+  Scalar columns (closed list): CanDelete, CanEdit, Age, Anniversary, AssistantPhone, Birthday, BusinessCity, BusinessCompany, BusinessCountry, BusinessDepartment, BusinessFax, BusinessHomePage, BusinessOffice, BusinessPhone, BusinessPhone2, BusinessState, BusinessStreetAddress, BusinessTitle, BusinessZip, CellPhone, ContactImage, DisplayName, FirstName, FuriganaFirstName, FuriganaLastName, HomeCity, HomeCountry, HomeFax, HomePhone, HomePhone2, HomeState, HomeStreetAddress, HomeWebPage, HomeZip, LastName, MiddleName, ModDate, NickName, Notes, NotesPlain, OtherCity, OtherCountry, OtherPhone, OtherState, OtherStreetAddress, OtherZip, Pager, RadioPhone, SetNameSuffix, SpousesName, Title, ExchangeID, GetFlagStatus, IsJapaneseContact, MainPhone, Type.
+- `contact_emails`: one row per `contactEmailAddress` element in any of six containers: `OPFContactCopyEmailAddressList`, `...List1`, `...List2`, `OPFContactCopyDefaultEmailAddress`, `OPFContactCopyIMAddressList`, `OPFContactCopyDefaultIMAddress`. Columns: `record_key`, `list_source` (container name, verbatim), `list_ordinal`, `Address`, `IsDefault`, `Type` (attribute values, verbatim). No de-duplication: E09 shows equal counts of default and list entries but no evidence that they are copies.
+- `contact_categories`: one row per `category` under `OPFContactCopyCategoryList`. Columns: `record_key`, `ordinal`, `Name`, `BackgroundColor`.
+- `contact_lists`: one row per `string` under `OPFContactCopyChildren` or `OPFContactCopyFuriganaChildrensNames`. Columns: `record_key`, `list_source`, `ordinal`, `value`.
+- `contact_pictures`: see Contact pictures.
+- `contact_long_text`: only when a scalar value exceeds 32,000 UTF-16 units. The main cell holds chunk 1 and this sheet holds chunks 2 to n (`record_key`, `field`, `chunk`, `value`), so main cell plus chunks reproduces the value exactly.
+- `categories`: one row per `category` in a `categories-olm-v1` member. Columns: `source_member`, `ordinal`, `Name`, `BackgroundColor`.
+
+Typing (ADR-011): every contact value is written as exact source text. Birthday, Anniversary and ModDate are not converted to Excel dates and have no parsed columns in v1.
+
+Contact pictures (ADR-010): `OPFContactAddPicture` values are binary payloads and are never written to cells or raw rows (02 non-goals). One `contact_pictures` row per picture: `record_key`, `picture_ordinal`, `type_declared` (the contact's `OPFContactAddPictureType`, verbatim; paired only when the contact has exactly one of each, otherwise empty and the type value is an unknown field), `encoding` (`base64` if the value decodes strictly as base64, else `unknown`), `size_chars`, `decoded_bytes`, `detected_format` (from magic bytes only: no image library is used), `hash_basis` (`decoded_bytes`, or `text` when the encoding is unknown), `sha256`, `exported_file`.
+- Default: metadata only. The picture value is `lost` with reason `PICTURE_NOT_EXPORTED`, so the outcome is PARTIAL.
+- Opt-in `export_images`: a picture that decodes is written as a separate file `pictures/<sha256 first 16 hex>.<ext>` (`ext` from the detected format, else `bin`), content-addressed so identical images share one file and no source text becomes a path. The value is then `mapped`. A picture that does not decode is not exported and stays `lost`. Files are written to a temporary directory and moved into place only after the workbook verifies.
+
 ## XLSX delivery contract
-Each XLSX includes `_manifest`, `_warnings`, `_unsupported`, populated family/child sheets and, when raw values exist, `_raw_index` plus `raw_NNNN` partitions. Manifest contains input digest, run version, adapter versions, record counts seen/exported/failed/unsupported, source values mapped/raw/lost with lost reason codes, flags, coverage scope, truncation/overflow indexes and outcome.
+Each XLSX includes `_manifest`, `_members` (one row per archive member: type, adapter, family, counts), `_warnings`, `_unsupported`, populated family/child sheets and, when raw values exist, `_raw_index` plus `raw_NNNN` partitions. Manifest contains input digest, run version, adapter versions, record counts seen/exported/failed/unsupported, source values mapped/structural/raw/lost with lost reason codes, structural declarations with consumed and failed counts, flags, coverage scope, truncation/overflow indexes and outcome.
 - Sheet names <=31 chars, unique, deterministic, escaped.
 - Excel per-sheet row cap 1,048,576; column cap 16,384; cell text cap 32,767 characters. Partition overflowing families into numbered sheets with manifest linking partitions.
 - Preserve Unicode and literal leading whitespace; identifiers/phones/ZIP codes remain text. Protect values starting with = + - @ (and control/whitespace-prefixed variants) from execution by writing them as explicit string-typed cells, not by adding a prefix: the stored text must equal the source value exactly. Confirm behavior with the chosen Excel writer/reader rather than assuming it succeeds.
 - No lossy type coercion. Long fields must use chunked sidecar sheets or clearly reported bounded truncation; silent truncation prohibited.
 - Chunking rule: chunks are at most 32,000 UTF-16 code units (Excel counts UTF-16 units, not code points), never split a surrogate pair, and are ordered by `chunk`. The headroom below 32,767 is fixed so no later cell policy can push a chunk over the cap.
 - Distinguish absent, empty, null-like, parse-failed and unsupported when available in source.
-- Dates retain original lexeme and parsed interpretation; no unverified timezone conversion.
+- Dates retain the original lexeme; no unverified timezone conversion. Contacts v1 stores dates as text only (ADR-011); a family that later adds parsed interpretation must keep the lexeme beside it.
 - No macro content, formula generation or external hyperlinks generated from untrusted payload by default.
 
 ## Completeness contract
 `seen = exported + failed + unsupported` at the agreed classification grain; per-family and per-record counters must reconcile, accounting for skipped nonrecords separately. Unknown archive members must be listed even if their semantics cannot be decoded. No blanket “all contents converted” promise when semantics are unknown.
 Field-level completeness rule, per XML member and per family:
-`source_values == mapped + raw + lost`
+`source_values == mapped + structural + raw + lost`
 - `mapped`: the value contributes to at least one family or child-sheet cell; each source value counts once.
+- `structural`: the value matched a structural declaration and passed its validator (see Structural values).
 - `raw`: the value was written as a raw extract row (chunks count once).
-- `lost`: neither; each lost value is counted with a reason code (`RAW_EXTRACT_DISABLED`, `RAW_EXTRACT_LIMIT`, `RECORD_PARSE_ERROR`, `EXCEL_LIMIT`).
+- `lost`: neither; each lost value is counted with a reason code (`RAW_EXTRACT_DISABLED`, `RAW_EXTRACT_LIMIT`, `RECORD_PARSE_ERROR`, `EXCEL_LIMIT`, `PICTURE_NOT_EXPORTED`).
 Outcome rule:
-- SUCCESS requires the record-level equation to reconcile and `raw == 0` and `lost == 0` for every member, with no member `uncounted` and no unclaimed non-XML member.
+- SUCCESS requires the record-level equation to reconcile, `raw == 0` and `lost == 0` for every member, and every structural check passed, with no member `uncounted` and no unclaimed non-XML member.
 - Otherwise the outcome is PARTIAL if at least one family was converted, UNSUPPORTED if none was (FAILED and CANCELLED keep their 02 meanings).
 - `raw` and `lost` are properties of the source, so the outcome is the same with raw extract on or off.
 A member whose values could not be counted (not walked after a limit, or parse stopped) is `uncounted` and can never contribute to SUCCESS. Non-XML members claimed by an adapter (for example attachment payloads referenced from records) are accounted at member grain; unclaimed non-XML members are inventoried in `_unsupported`.
 
 ## Batch delivery
-Aggregate ZIP contains `manifest.json`, one deterministically named per-file workbook for each qualified downloadable result, optional per-file report JSON, and opt-in extracted attachments only after explicit design approval. Name collision handling is stable and path-safe.
+Aggregate ZIP contains `manifest.json`, one deterministically named per-file workbook for each qualified downloadable result, optional per-file report JSON, opt-in contact picture files (ADR-010), and other extracted attachments only after explicit design approval. Name collision handling is stable and path-safe.
 
 ## Compatibility
 Schema registry entries define exact fixtures and evidence, not universal claims. Contract changes to sheet names, columns, grain, interpretation or parser selection require versioning plus migration notes.

@@ -2,7 +2,7 @@
 
 ## Open questions
 
-1. **Real OLM layout** — Contact XML path, namespaces, and field names (e.g. business phone) have **not** been checked against an actual Outlook for Mac export; assessment marks this **Unknown** until a real file is inspected. See [ASSESSMENT.md](ASSESSMENT.md), [fidelity/01-PROBLEM-AND-REALITY.md](fidelity/01-PROBLEM-AND-REALITY.md), and [samples/README.md](samples/README.md).
+1. **Real OLM layout** — Contact XML paths, namespaces and field names are now known for **one** contacts-only export (structure-only profile, evidence E09). Other Outlook versions and record families are still **Unknown**. See [ASSESSMENT.md](ASSESSMENT.md), [fidelity/01-PROBLEM-AND-REALITY.md](fidelity/01-PROBLEM-AND-REALITY.md), and [samples/README.md](samples/README.md).
 2. **Shipping shape and v1 scope** — [ASSESSMENT.md](ASSESSMENT.md) and [CONVERTER-OLM-report.md](CONVERTER-OLM-report.md) rank **approach B** (parent-repo `olm_contacts` module + thin Streamlit wire) for a narrow contacts MVP, with **approach C** (separate app) when mapping UI or large archives land in v1. The [Engineering Fidelity Dossier](fidelity/README.md) (**PROPOSED**, 2026-10-08) treats **this repository** as the standalone conversion core (see [ADR-001](fidelity/05-DECISIONS-AND-TRADEOFFS.md)) and scopes **target** output toward multiple record families when validated—not contacts-only forever. Product acceptance still **OPEN** on “full conversion” families and partial-download UX; see [fidelity/02-PRD-AND-ACCEPTANCE.md](fidelity/02-PRD-AND-ACCEPTANCE.md).
 
 ---

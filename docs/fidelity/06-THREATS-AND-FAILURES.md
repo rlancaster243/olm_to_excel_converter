@@ -24,9 +24,12 @@ Protected assets: local filesystem, memory/CPU, private mail/contact content, ou
 | Raw extract row explosion (many tiny nodes) | `raw_extract_max_values` quota, partitioned sheets, stop with RAW_EXTRACT_LIMIT, never silent truncation | node-dense synthetic fixture |
 | Raw output read as interpreted data | `raw_` sheet prefix, manifest flag, outcome never SUCCESS when any source value is raw or lost | workbook and UI warning tests |
 | Adapter overstates its own coverage | core walker counts source values independently; adapters only report mapped ordinals | under-reporting adapter fixture |
+| Record data hidden by declaring it structural | closed declarations in the registry with evidence; validators run by the core; per-declaration consumed and failed counts in `_manifest`; failed checks route to raw or lost | T26-T28: undeclared names never structural; bad values fail |
+| Hostile picture payload (oversized, malformed, path-like) | pictures are only base64-decoded and magic-byte sniffed, never parsed with an image library; file names derive from the SHA-256, never from source text; size cap per picture; files written to a temporary directory and moved in only after workbook verification | hostile picture fixtures (T31) |
+| Exported image files opened by other software | residual risk, declared: the tool never renders or executes images, but viewers may; files stay opt-in | documented limitation |
 
 ## Failure taxonomy
-INPUT_INVALID, ARCHIVE_UNSAFE, RESOURCE_LIMIT, FORMAT_UNKNOWN, AMBIGUOUS_ADAPTER, RECORD_PARSE_ERROR, FIELD_LOSS_RISK, EXCEL_LIMIT, RAW_EXTRACT_LIMIT, RAW_EXTRACT_DISABLED, OUTPUT_IO, CANCELLED, INTERNAL_ERROR.
+INPUT_INVALID, ARCHIVE_UNSAFE, RESOURCE_LIMIT, FORMAT_UNKNOWN, AMBIGUOUS_ADAPTER, RECORD_PARSE_ERROR, FIELD_LOSS_RISK, EXCEL_LIMIT, RAW_EXTRACT_LIMIT, RAW_EXTRACT_DISABLED, PICTURE_NOT_EXPORTED, STRUCTURAL_MISMATCH (warning), OUTPUT_IO, CANCELLED, INTERNAL_ERROR.
 Errors must include stable code, scope (archive/member/record), recoverability, corrective action and safe metadata; no raw personal data.
 
 ## Recovery and containment

@@ -30,7 +30,9 @@ G7 Archives with unrecognized schemas still deliver their readable values, as a 
 | F11 | Allow cancellation within bounded processing checkpoints | Cancel produces no falsely completed workbook |
 | F12 | Make runs reproducible against identical input/config/adapter versions | Deterministic logical outputs and recorded tool versions |
 | F13 | By default, write every readable value from unclaimed XML members and unknown fields to raw extract sheets (04 Raw extract contract) | Schema-variant fixtures: mapped + raw + lost equals source values; outcome never SUCCESS when raw > 0; opt-out recorded in manifest |
-| F14 | Account for every source value as mapped, raw or lost, per member and family (04 field-level completeness rule) | Manifest counts reconcile on every fixture; any raw or lost value prevents SUCCESS |
+| F14 | Account for every source value as mapped, structural, raw or lost, per member and family (04 field-level completeness rule) | Manifest counts reconcile on every fixture; any raw or lost value prevents SUCCESS |
+| F15 | Check declared structural values (for example `xml:space`, root `elementCount`) and report them as a separate count; a failed check is never structural | Structural fixtures T26-T28: counts reconcile; mismatch gives PARTIAL and a warning |
+| F16 | Contact pictures: metadata sheet always; image files only on opt-in export; never binary in cells | T31: metadata row per picture, content-addressed files on export, `PICTURE_NOT_EXPORTED` otherwise |
 
 ## Nonfunctional requirements
 N01 Correctness over coverage claims; cannot label a run SUCCESS when any in-scope record is unaccounted for or any source value is raw or lost.
@@ -54,7 +56,7 @@ N08 Consistent behavior across clean supported Python environments, with pinned 
 P0 reconnaissance and safety foundation; P1 contacts-only vertical slice against real fixture; P2 multi-upload and diagnostics; P3 independently validated record-family adapters; P4 optional hosted interface only after separate governance decision. Target includes all proven supported families, but P1 is deliberately narrower than the desired full conversion.
 
 ## Semantic completion states
-SUCCESS: all detected in-scope recognized records exported and every source value mapped: zero raw, zero lost, no uncounted member (04 field-level completeness rule).
+SUCCESS: all detected in-scope recognized records exported and every source value mapped or structural: zero raw, zero lost, no uncounted member (04 field-level completeness rule).
 PARTIAL: usable output, at least one family converted, but one or more records or source values not mapped (raw or lost); exact exception inventory.
 UNSUPPORTED: valid archive with no supported reader for relevant structures.
 FAILED: archive safety/integrity or processing fault prevented reliable output.
@@ -69,3 +71,6 @@ A success state must never be inferred merely from “XLSX created.”
 ## Decided acceptance choices
 - 2026-10-09, product owner: PARTIAL and UNSUPPORTED results with a verified workbook are **downloadable**, so their output can be assessed. Before download and inside the workbook, the UI and `_manifest` must state that the result is not fully converted, with the outcome state and the mapped/raw/lost counts. A PARTIAL or UNSUPPORTED download is never presented like a SUCCESS. FAILED and CANCELLED results publish no workbook.
 - 2026-10-09, product owner: raw extract for unrecognized schemas is **default-on** (F13, ADR-008). Contract mechanics in 04 remain PROPOSED pending architecture review.
+- 2026-10-09, product owner: **structural values**. `xml:space` and the root `elementCount` are declared structural: checked, not exported, counted separately (F15, ADR-009). Recorded from the product owner's verbatim selection "Yes (Recommended)", relayed through a second Claude session; please correct here if it was misrecorded.
+- 2026-10-09, product owner: **contact pictures**. Metadata sheet plus optional export of the images as separate files (F16, ADR-010). Verbatim selection "Metadata + image files (Recommended)", relayed the same way.
+- 2026-10-09, product owner: **dates**. Contacts v1 keeps dates as exact text (ADR-011). Verbatim selection "Keep as text (Recommended)", relayed the same way.
