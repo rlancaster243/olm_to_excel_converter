@@ -34,13 +34,16 @@ Golden expected outputs are independently derived from real Outlook sample inspe
 | T14 | no-network run, logging | zero outbound content transmission, no PII in logs |
 | T15 | no contacts but valid other-family archive | no false “empty success”; family coverage explicit |
 | T16 | schema mutation fuzzing | no uncaught unsafe failure; diagnostics preserve coverage state |
-| T17 | known family with a renamed child element (e.g. `emailAddress` → `contactEmailAddress`) | adapter not selected or field reported unknown; never zero emails with SUCCESS; raw values written == observed |
-| T18 | known family with an added root namespace | probe either matches namespace-aware or yields UNSUPPORTED; raw values written == observed |
-| T19 | node-dense member exceeding `raw_extract_max_values` | RAW_EXTRACT_LIMIT, `raw_complete=false`, no silent truncation, non-SUCCESS outcome |
-| T20 | raw extract opt-out | inventory only, manifest records opt-out, outcome unchanged |
-| T21 | malformed XML in an unclaimed member | rows before the error retained, `raw_complete=false`, RECORD_PARSE_ERROR |
+| T17 | known family with a renamed child element (e.g. `emailAddress` → `contactEmailAddress`) | whether or not the adapter is selected: mapped + raw + lost == source values; the email attribute values appear as mapped or raw, never silently absent; outcome not SUCCESS |
+| T18 | known family with an added root namespace | whether the probe matches namespace-aware (all mapped, SUCCESS allowed) or not (UNSUPPORTED, all raw): mapped + raw + lost == source values; namespace declaration not counted |
+| T19 | node-dense member exceeding `raw_extract_max_values`, followed by further unclaimed members | RAW_EXTRACT_LIMIT, `raw_complete=false` on the cut member, every later member indexed with stop reason, no silent truncation, non-SUCCESS outcome |
+| T20 | raw extract opt-out on an archive with unclaimed members | no raw rows; unmapped values counted lost with RAW_EXTRACT_DISABLED; outcome identical to the opt-in run |
+| T21 | malformed XML in an unclaimed member | rows before the error retained, `raw_complete=false`, RECORD_PARSE_ERROR, member uncounted beyond the error |
+| T22 | whitespace-only leaf text, `xml:space="preserve"`, empty element, element with attributes only | counted per 04 Source values; empty vs whitespace vs absent distinguishable in output |
+| T23 | value > 32,000 UTF-16 units containing astral characters, with a chunk starting with `=` | chunks ≤ 32,000 UTF-16 units, no split surrogate pair, concatenated chunks equal the source exactly, no executable formula |
+| T24 | adapter that under-reports mapped ordinals | core counts unchanged; unreported values routed to raw; outcome not SUCCESS |
 
-Schema-variant fixtures T17/T18 are synthetic mutations of `docs/samples/sample.olm`. Their oracle is a raw value count from an independent walker over the unmodified XML (241,487 attribute, text and empty-element values for the committed sample, counted 2026-10-09; recount when the fixture changes).
+Schema-variant fixtures T17/T18 are synthetic mutations of `docs/samples/sample.olm`. Their oracle is the source value count from an independent walker over the unmodified XML: 241,487 for the committed sample (77,592 attribute, 163,895 text, 0 empty; 542 values contain astral characters), counted 2026-10-09 under the 04 Source values definition. Recount when the fixture or the definition changes. The mutations change names, not values, so each variant must also total 241,487.
 
 ## Format corpus
 Maintain `tests/fixtures/manifest.yaml` with IDs, provenance, anonymization/synthetic tag, license/consent, Outlook build, OS, export scope, hash, sensitive-data handling, family fingerprints, expected counts, compatibility status. Never commit actual user/private OLM exports without explicit authorization and privacy review. Synthetic is never proof of real vendor support.
@@ -55,10 +58,11 @@ Q5: capacity, security, cleanup, packaging and operating checks pass; residual u
 No deployment or “universal OLM support” claim is authorized by a passing synthetic-only suite.
 
 ## Fitness functions
-- `classified == exported + failed + unsupported` per family under recorded classification semantics.
+- `seen == exported + failed + unsupported` per family under recorded classification semantics (record level, as in 04).
 - No silent unaccounted known records or mapped fields.
-- Per extracted member, `raw_values_observed == raw_values_written` unless `raw_complete=false` with a recorded stop reason.
-- Presence of raw rows never yields SUCCESS.
+- Per XML member and per family, `source_values == mapped + raw + lost`, counted by the core walker, not the adapter.
+- SUCCESS only when raw == 0, lost == 0 and no member is uncounted.
+- Outcome is identical with raw extract on and off for the same input.
 - Parser ambiguity never falls back to an unverified default.
 - Atomic artifact publication only after workbook verification.
 - Peak memory and per-file processing measured against separately approved SLOs.

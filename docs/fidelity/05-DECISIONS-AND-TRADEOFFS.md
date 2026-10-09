@@ -58,6 +58,7 @@ Decision: when no adapter claims an XML member, or a claimed record carries unkn
 Benefit: no readable value is withheld from the user; schema changes stay visible instead of silently vanishing; the raw sheets are the evidence base for the next adapter.
 Cost: one-row-per-value sheets are awkward to read and can hit row caps quickly on large mailboxes; more output volume and processing time; users may mistake raw output for supported conversion.
 Assumption: users prefer awkward-but-complete data over an inventory-only result; sheet naming, manifest flags and the non-SUCCESS outcome prevent raw output being read as interpreted data.
+Completeness: the outcome comes from the field-level rule in 04 (`source_values == mapped + raw + lost`), counted by the core walker. The raw extract flag decides only whether unmapped values are delivered as raw or reported as lost, never the outcome.
 Relation to ADR-007: compatible. Raw rows claim location, not meaning, and are never promoted to canonical columns without an adapter. This is distinct from the rejected generic XML flattening, which guesses columns from tag names.
 Revisit: raw volume regularly exceeds limits, users report misreading raw output as converted data, or privacy review requires minimizing output to interpreted fields.
 

@@ -29,10 +29,11 @@ G7 Archives with unrecognized schemas still deliver their readable values, as a 
 | F10 | Give actionable outcome states: SUCCESS / PARTIAL / FAILED / UNSUPPORTED / CANCELLED | Matrix of all outcomes |
 | F11 | Allow cancellation within bounded processing checkpoints | Cancel produces no falsely completed workbook |
 | F12 | Make runs reproducible against identical input/config/adapter versions | Deterministic logical outputs and recorded tool versions |
-| F13 | By default, write every readable value from unclaimed XML members and unknown fields to raw extract sheets (04 Raw extract contract) | Schema-variant fixtures: raw values written equal raw values observed; outcome never SUCCESS; opt-out recorded in manifest |
+| F13 | By default, write every readable value from unclaimed XML members and unknown fields to raw extract sheets (04 Raw extract contract) | Schema-variant fixtures: mapped + raw + lost equals source values; outcome never SUCCESS when raw > 0; opt-out recorded in manifest |
+| F14 | Account for every source value as mapped, raw or lost, per member and family (04 field-level completeness rule) | Manifest counts reconcile on every fixture; any raw or lost value prevents SUCCESS |
 
 ## Nonfunctional requirements
-N01 Correctness over coverage claims; cannot label a run SUCCESS when any in-scope material record is unaccounted for.
+N01 Correctness over coverage claims; cannot label a run SUCCESS when any in-scope record is unaccounted for or any source value is raw or lost.
 N02 Memory is bounded as a function of configured chunk/buffer sizes, except bounded metadata; no whole-XML tree requirement.
 N03 Archive/member/count/ratio/CPU/time concurrency limits configurable and tested.
 N04 No external network transfer of uploaded contents in default local mode.
@@ -53,8 +54,8 @@ N08 Consistent behavior across clean supported Python environments, with pinned 
 P0 reconnaissance and safety foundation; P1 contacts-only vertical slice against real fixture; P2 multi-upload and diagnostics; P3 independently validated record-family adapters; P4 optional hosted interface only after separate governance decision. Target includes all proven supported families, but P1 is deliberately narrower than the desired full conversion.
 
 ## Semantic completion states
-SUCCESS: all detected in-scope recognized records and required fields exported with no material data-loss warning.
-PARTIAL: usable output but one or more records/fields/record families not faithfully exported; exact exception inventory.
+SUCCESS: all detected in-scope recognized records exported and every source value mapped: zero raw, zero lost, no uncounted member (04 field-level completeness rule).
+PARTIAL: usable output, at least one family converted, but one or more records or source values not mapped (raw or lost); exact exception inventory.
 UNSUPPORTED: valid archive with no supported reader for relevant structures.
 FAILED: archive safety/integrity or processing fault prevented reliable output.
 CANCELLED: operator stopped the work before completion.

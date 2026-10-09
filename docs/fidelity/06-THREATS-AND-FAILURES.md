@@ -13,7 +13,7 @@ Protected assets: local filesystem, memory/CPU, private mail/contact content, ou
 | ZIP bombs / high expansion ratio | cap total uncompressed bytes, per-member bytes, compression ratio, entry count and nesting depth | adversarial compression corpus |
 | XML entities, external resource access, deep nesting | hardened XML parser; prohibit external entities/DTD as feasible; depth and node/size limits | XXE and deep XML fixtures |
 | Huge single XML / pathological recursion | incremental parser + bounded buffers; stop on quota | memory profile |
-| Formula injection in XLSX | force text and sanitize formula-triggering strings; roundtrip with Excel library | malicious-cell tests |
+| Formula injection in XLSX | write explicit string-typed cells so formula-like values stay inert without altering text (no prefixing); roundtrip with Excel library. Residual: re-saving the workbook as CSV can make such values live again | malicious-cell tests with exact text equality |
 | Filename collisions / archive ordering | deterministic safe names, source-derived run identity, isolated job dirs | concurrent duplicate-name uploads |
 | Sensitive content in logs | structured metadata-only logging; explicitly prohibit personal field values | log capture tests |
 | Temp file leakage | isolated permissions, lifecycle cleanup, crash recovery janitor | aborted-run test |
@@ -22,10 +22,11 @@ Protected assets: local filesystem, memory/CPU, private mail/contact content, ou
 | Malformed encodings and dates | retain original lexemes and mark undecodable data, no silent defaults | encoding corpus |
 | Unsupported proprietary payload | mark UNSUPPORTED/PARTIAL and enumerate evidence | unknown-format tests |
 | Raw extract row explosion (many tiny nodes) | `raw_extract_max_values` quota, partitioned sheets, stop with RAW_EXTRACT_LIMIT, never silent truncation | node-dense synthetic fixture |
-| Raw output read as interpreted data | `raw_` sheet prefix, manifest flag, outcome never SUCCESS when raw rows exist | workbook and UI warning tests |
+| Raw output read as interpreted data | `raw_` sheet prefix, manifest flag, outcome never SUCCESS when any source value is raw or lost | workbook and UI warning tests |
+| Adapter overstates its own coverage | core walker counts source values independently; adapters only report mapped ordinals | under-reporting adapter fixture |
 
 ## Failure taxonomy
-INPUT_INVALID, ARCHIVE_UNSAFE, RESOURCE_LIMIT, FORMAT_UNKNOWN, AMBIGUOUS_ADAPTER, RECORD_PARSE_ERROR, FIELD_LOSS_RISK, EXCEL_LIMIT, RAW_EXTRACT_LIMIT, OUTPUT_IO, CANCELLED, INTERNAL_ERROR.
+INPUT_INVALID, ARCHIVE_UNSAFE, RESOURCE_LIMIT, FORMAT_UNKNOWN, AMBIGUOUS_ADAPTER, RECORD_PARSE_ERROR, FIELD_LOSS_RISK, EXCEL_LIMIT, RAW_EXTRACT_LIMIT, RAW_EXTRACT_DISABLED, OUTPUT_IO, CANCELLED, INTERNAL_ERROR.
 Errors must include stable code, scope (archive/member/record), recoverability, corrective action and safe metadata; no raw personal data.
 
 ## Recovery and containment

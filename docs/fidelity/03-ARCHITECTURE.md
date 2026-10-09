@@ -32,7 +32,7 @@ flowchart TD
 | Upload | UI/CLI → coordinator | read-only file handles, opaque job IDs, limits | adapter owns no upload session state |
 | Inspection | guard → discovery | safe indexed member descriptors with sizes/hashes | guard rejects unsafe ZIP before parse |
 | Selection | discovery → adapter registry | signatures + confidence + version, no filename-only assertion | registry rejects ambiguity/unsupported |
-| Extraction | adapter → canonical stream | records, identities, typed fields, unknowns and source locators | adapter is accountable for claimed coverage |
+| Extraction | adapter → canonical stream | records, identities, typed fields, unknowns and source locators | adapter is accountable for mapping; the core walker counts source values so coverage is not self-reported |
 | Raw extraction | discovery (unclaimed members) and envelopes (unknown fields) → XLSX | raw value rows with positional path and provenance, no semantic claim (04) | extractor owns raw completeness counters; never infers record boundaries |
 | Projection | canonical stream → XLSX | normalized sheets, safe cell policies and stable naming | writer enforces Excel constraints |
 | Completion | writer → batch collector | immutable result manifest and outcome state | coordinator owns aggregation/retry/cancel |
@@ -48,7 +48,7 @@ Do not send raw contacts or message bodies through observability or control even
 - `adapters/`: independently versioned readers for proven OLM variants and record families; capability declarations.
 - `core/records.py`: immutable canonical envelope + typed values + raw unknown references.
 - `core/projection.py`: normalized family views and overflow mapping without semantic guessing.
-- `core/raw_extract.py`: schema-agnostic streaming walker emitting raw value rows for unclaimed XML members and unknown fields; default-on (ADR-008).
+- `core/raw_extract.py`: schema-agnostic streaming source-value walker. Adapters read XML through it; it counts every source value, and emits raw rows for unclaimed XML members and unmapped values (default-on, ADR-008).
 - `core/xlsx_writer.py`: streaming or write-only workbook writer; workbook constraints and guard against formula execution.
 - `core/coordinator.py`: bounded sequential/default-concurrency processing, deterministic job outcomes.
 - `interfaces/cli.py` and `interfaces/ui.py`: thin presentation adapters only.

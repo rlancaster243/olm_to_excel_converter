@@ -6,8 +6,8 @@ Status: PROPOSED, not executed. Implement in reviewable PRs, no direct unreviewe
 W00: Evidence and scope — consented real exports, fixtures metadata, confirm family scope, output example and privacy rules. Exit: U01/U02/U04 reduced and PRD reviewable.
 W01: Package and quality skeleton — src layout, pyproject lock strategy, CLI stub, tests/CI, static typing, formatting. Exit: clean reproducible development environment.
 W02: Safe archive intake — ZIP guard, member inventory, quotas, malformed archive diagnostics. Exit Q1.
-W03: Schema discovery and adapter API — probes, registry, conflict resolution and unknown inventory. Exit: deterministic selection on labeled fixtures.
-W04: Canonical envelope and coverage accounting — provenance/identity/time/multivalue records, plus the default-on raw extractor and its reconciliation (04 Raw extract contract, ADR-008). Exit: independently checked contract tests including T17-T21.
+W03: Schema discovery and adapter API — probes, registry, conflict resolution and unknown inventory; the adapter API fixes the source-value walker interface adapters consume (implemented in W04). Exit: deterministic selection on labeled fixtures.
+W04: Canonical envelope and coverage accounting — provenance/identity/time/multivalue records, plus the core source-value walker, field-level completeness counters and the default-on raw extractor (04 Source values, Raw extract and Completeness contracts, ADR-008). Exit: independently checked contract tests including T17-T24.
 W05: Contacts vertical slice — a **real** format contact adapter, streaming, normalized sheet export and warnings. Exit Q2.
 W06: Batch orchestration and surface — multi-upload local UI + CLI, cancel, progress, per-file download, aggregate ZIP. Exit Q3.
 W07: Family adapters — messages/calendar/tasks/notes/groups and attachment metadata, each gated by real reference exports; dependencies independent where possible. Exit Q4 per family, no speculative support checkboxes.
