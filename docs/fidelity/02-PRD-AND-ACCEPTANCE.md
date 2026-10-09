@@ -12,6 +12,7 @@ G3 Export supported mail, contacts, events, tasks, notes and groups when their r
 G4 Preserve multi-value fields, source identifiers and raw/unmapped value references in a recoverable manner.
 G5 Report exact completeness/partiality and conversion failures per archive, family and record.
 G6 Local processing is default until hosting/privacy requirements are explicitly approved.
+G7 Archives with unrecognized schemas still deliver their readable values, as a labeled raw extract with provenance and no semantic claim.
 
 ## Functional requirements
 | ID | Requirement | Acceptance evidence |
@@ -28,6 +29,7 @@ G6 Local processing is default until hosting/privacy requirements are explicitly
 | F10 | Give actionable outcome states: SUCCESS / PARTIAL / FAILED / UNSUPPORTED / CANCELLED | Matrix of all outcomes |
 | F11 | Allow cancellation within bounded processing checkpoints | Cancel produces no falsely completed workbook |
 | F12 | Make runs reproducible against identical input/config/adapter versions | Deterministic logical outputs and recorded tool versions |
+| F13 | By default, write every readable value from unclaimed XML members and unknown fields to raw extract sheets (04 Raw extract contract) | Schema-variant fixtures: raw values written equal raw values observed; outcome never SUCCESS; opt-out recorded in manifest |
 
 ## Nonfunctional requirements
 N01 Correctness over coverage claims; cannot label a run SUCCESS when any in-scope material record is unaccounted for.
@@ -63,3 +65,6 @@ A success state must never be inferred merely from “XLSX created.”
 - Should attachments themselves be packaged alongside workbook? Proposed opt-in separate files with integrity hash, never embedded by default.
 - Confirm output file naming, sharing model, Excel locale/date conventions, batch ceiling, and target operating platform.
 - Decide whether partial results should be downloadable with prominent warnings (proposed yes).
+
+## Decided acceptance choices
+- 2026-10-09, product owner: raw extract for unrecognized schemas is **default-on** (F13, ADR-008). Contract mechanics in 04 remain PROPOSED pending architecture review.

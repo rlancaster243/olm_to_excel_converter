@@ -6,7 +6,7 @@ Status: proposed operational contract for future implementations; no runtime dep
 Per archive: job ID, SHA-256, byte size, archive member count, adapter signatures/versions, counters per family, current stage, elapsed time, peak memory, outcome, warnings/errors, artifact hash. No contact names, addresses, message bodies, attachment bytes, personal field values or unsafe paths in default logs.
 
 ## Operational runbooks
-1 Unsupported schema: retain safe inventory, declare unsupported features, request permissioned scrubbed sample, create adapter discovery issue; no fallback guess.
+1 Unsupported schema: retain safe inventory and the default-on raw extract, declare unsupported features, request permissioned scrubbed sample, create adapter discovery issue; no fallback guess. Use raw `element_path` distributions, not raw values, as the safe shareable evidence for adapter design.
 2 Corrupt/unsafe archive: reject, log safe code and limit hit, do not try alternate unsafe extraction.
 3 Partial parse: publish only qualified PARTIAL output + exact manifest, isolate failures; rerun after adapter correction with original read-only file.
 4 Output writing failure/disk full: quarantine/delete temp workbook; never publish damaged XLSX; preserve job failure report.
@@ -26,6 +26,8 @@ Initial entries:
 - E04 [PROPOSED] standalone local-first adapter architecture.
 - E05 [OPEN] benchmark and security limits unqualified for this implementation.
 - E06 [CONTRADICTION in decision context] original parent-module recommendation vs newly requested standalone scope; resolve by explicit ADR-001 approval.
+- E07 [OBSERVED] 2026-10-09 throwaway check on `sample.olm` (not committed): a hardcoded-path parser returned 20,000 contacts and 0 emails when `emailAddress` was renamed, and 0 contacts when a root namespace was added, while a schema-agnostic walker counted 241,487 raw values in all three variants. Motivates T17/T18 and ADR-008.
+- E08 [PROPOSED] default-on raw extract contract (ADR-008); default-on itself accepted by product owner 2026-10-09.
 
 ## Material reconciliation triggers
 New fixture contradicts schema hypothesis; parser produces orphan/omitted record; field mapping changes meaning; security boundary changes; coverage count fails; memory/cost materially exceeds requirement; client reports missing record family; owner revises PRD. Record first invalid artifact, impacted dependents and required retest.

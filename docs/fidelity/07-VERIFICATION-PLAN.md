@@ -34,6 +34,13 @@ Golden expected outputs are independently derived from real Outlook sample inspe
 | T14 | no-network run, logging | zero outbound content transmission, no PII in logs |
 | T15 | no contacts but valid other-family archive | no false “empty success”; family coverage explicit |
 | T16 | schema mutation fuzzing | no uncaught unsafe failure; diagnostics preserve coverage state |
+| T17 | known family with a renamed child element (e.g. `emailAddress` → `contactEmailAddress`) | adapter not selected or field reported unknown; never zero emails with SUCCESS; raw values written == observed |
+| T18 | known family with an added root namespace | probe either matches namespace-aware or yields UNSUPPORTED; raw values written == observed |
+| T19 | node-dense member exceeding `raw_extract_max_values` | RAW_EXTRACT_LIMIT, `raw_complete=false`, no silent truncation, non-SUCCESS outcome |
+| T20 | raw extract opt-out | inventory only, manifest records opt-out, outcome unchanged |
+| T21 | malformed XML in an unclaimed member | rows before the error retained, `raw_complete=false`, RECORD_PARSE_ERROR |
+
+Schema-variant fixtures T17/T18 are synthetic mutations of `docs/samples/sample.olm`. Their oracle is a raw value count from an independent walker over the unmodified XML (241,487 attribute, text and empty-element values for the committed sample, counted 2026-10-09; recount when the fixture changes).
 
 ## Format corpus
 Maintain `tests/fixtures/manifest.yaml` with IDs, provenance, anonymization/synthetic tag, license/consent, Outlook build, OS, export scope, hash, sensitive-data handling, family fingerprints, expected counts, compatibility status. Never commit actual user/private OLM exports without explicit authorization and privacy review. Synthetic is never proof of real vendor support.
@@ -50,6 +57,8 @@ No deployment or “universal OLM support” claim is authorized by a passing sy
 ## Fitness functions
 - `classified == exported + failed + unsupported` per family under recorded classification semantics.
 - No silent unaccounted known records or mapped fields.
+- Per extracted member, `raw_values_observed == raw_values_written` unless `raw_complete=false` with a recorded stop reason.
+- Presence of raw rows never yields SUCCESS.
 - Parser ambiguity never falls back to an unverified default.
 - Atomic artifact publication only after workbook verification.
 - Peak memory and per-file processing measured against separately approved SLOs.

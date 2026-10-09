@@ -21,9 +21,11 @@ Protected assets: local filesystem, memory/CPU, private mail/contact content, ou
 | Unexpected host networking | offline default; dependency policy; scan for outbound calls | network-blocked integration tests |
 | Malformed encodings and dates | retain original lexemes and mark undecodable data, no silent defaults | encoding corpus |
 | Unsupported proprietary payload | mark UNSUPPORTED/PARTIAL and enumerate evidence | unknown-format tests |
+| Raw extract row explosion (many tiny nodes) | `raw_extract_max_values` quota, partitioned sheets, stop with RAW_EXTRACT_LIMIT, never silent truncation | node-dense synthetic fixture |
+| Raw output read as interpreted data | `raw_` sheet prefix, manifest flag, outcome never SUCCESS when raw rows exist | workbook and UI warning tests |
 
 ## Failure taxonomy
-INPUT_INVALID, ARCHIVE_UNSAFE, RESOURCE_LIMIT, FORMAT_UNKNOWN, AMBIGUOUS_ADAPTER, RECORD_PARSE_ERROR, FIELD_LOSS_RISK, EXCEL_LIMIT, OUTPUT_IO, CANCELLED, INTERNAL_ERROR.
+INPUT_INVALID, ARCHIVE_UNSAFE, RESOURCE_LIMIT, FORMAT_UNKNOWN, AMBIGUOUS_ADAPTER, RECORD_PARSE_ERROR, FIELD_LOSS_RISK, EXCEL_LIMIT, RAW_EXTRACT_LIMIT, OUTPUT_IO, CANCELLED, INTERNAL_ERROR.
 Errors must include stable code, scope (archive/member/record), recoverability, corrective action and safe metadata; no raw personal data.
 
 ## Recovery and containment

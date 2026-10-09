@@ -52,6 +52,15 @@ Cost: less instantly polished output on novel schemas.
 Assumption: correctness and accountability outweigh superficial coverage.
 Revisit: verified format mapping and tests justify promotion.
 
+## ADR-008 — Default-on raw extract for unrecognized structures
+Status: default-on accepted by product owner 2026-10-09; contract mechanics (04) PROPOSED pending architecture review.
+Decision: when no adapter claims an XML member, or a claimed record carries unknown fields, write every readable value as one raw row (positional path, provenance, literal text) instead of only inventorying it. On by default; operators may opt out.
+Benefit: no readable value is withheld from the user; schema changes stay visible instead of silently vanishing; the raw sheets are the evidence base for the next adapter.
+Cost: one-row-per-value sheets are awkward to read and can hit row caps quickly on large mailboxes; more output volume and processing time; users may mistake raw output for supported conversion.
+Assumption: users prefer awkward-but-complete data over an inventory-only result; sheet naming, manifest flags and the non-SUCCESS outcome prevent raw output being read as interpreted data.
+Relation to ADR-007: compatible. Raw rows claim location, not meaning, and are never promoted to canonical columns without an adapter. This is distinct from the rejected generic XML flattening, which guesses columns from tag names.
+Revisit: raw volume regularly exceeds limits, users report misreading raw output as converted data, or privacy review requires minimizing output to interpreted fields.
+
 ## Alternatives matrix
 | Choice | Simplicity | Multi-family evolution | Correctness observability | Main risk |
 |---|---|---|---|---|
@@ -59,6 +68,7 @@ Revisit: verified format mapping and tests justify promotion.
 | Parent module | medium | medium | medium | shared release/runtime |
 | Standalone adapter core | medium initially | high | high if verified | fixture and maintenance overhead |
 | Generic XML flattening | deceptively high | superficial | low | fabricated semantics, relationship loss |
+| Raw extract (one row per value, ADR-008) | medium | supports adapter discovery | high: lossless and countable | consumer usability, output volume |
 
 ## Decision authority
 Product owner approves families and UX; architecture owner approves boundaries and ADRs; security/privacy reviewer approves hosting and retention; verification owner approves qualification evidence. A single individual may fill multiple roles, but verification independence must be disclosed.
