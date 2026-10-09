@@ -295,9 +295,37 @@ def test_schema_variants_never_succeed_silently(tmp_path: Path) -> None:  # T17,
 
 def test_categories_adapter_rows(tmp_path: Path, built) -> None:
     archive, exp = built
-    _, wb = run(tmp_path, archive)
+    result, wb = run(tmp_path, archive)
     rows = table_rows(wb, "categories")
     assert [(r["source_member"], r["ordinal"], r["Name"]) for r in rows] == [(MEMBER_PATHS["categories"], str(k + 1), f"Global {k}") for k in range(exp.global_categories)]
+    keys = [r["record_key"] for r in rows]
+    assert len(set(keys)) == len(keys) == exp.global_categories
+    assert all(k.startswith(result.input_sha256[:12] + "/") and k.endswith(f"/{n}") for n, k in enumerate(keys, start=1))
+
+
+@pytest.mark.parametrize(
+    ("second_category", "attribute", "value"),
+    [
+        pytest.param(f'<category{SP} OPFCategoryCopyBackgroundColor="#222" OPFCategoryCopyName="Second" Extra="1"/>', "Extra", "1", id="attribute"),
+        pytest.param(f'<category{SP} OPFCategoryCopyBackgroundColor="#222" OPFCategoryCopyName="Second"><Note>x</Note></category>', "", "x", id="child-element"),
+    ],
+)
+def test_unknown_fields_of_a_category_carry_the_category_record_key(tmp_path: Path, second_category: str, attribute: str, value: str) -> None:
+    xml = (
+        f'<categories elementCount="2">'
+        f'<category{SP} OPFCategoryCopyBackgroundColor="#111" OPFCategoryCopyName="First"/>'
+        f'{second_category}</categories>'
+    ).encode()
+    result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"Categories.xml": xml}))
+    assert result.error is None and result.outcome is Outcome.PARTIAL
+    t = result.totals
+    assert t.raw == 1 and t.source_values == t.mapped + t.structural + t.raw + t.lost
+    assert all(m.account.reconciles() for m in result.members)
+    keys = {r["Name"]: r["record_key"] for r in table_rows(wb, "categories")}
+    assert keys["First"].endswith("/1") and keys["Second"].endswith("/2")
+    (raw,) = table_rows(wb, "raw_0001")
+    assert (raw["attribute"], raw["value"]) == (attribute, value)
+    assert raw["record_key"] == keys["Second"]
 
 
 def test_non_xml_members_make_the_result_partial_and_are_inventoried(tmp_path: Path) -> None:
@@ -398,6 +426,7 @@ def test_an_oversize_category_name_is_kept_on_its_own_sidecar(tmp_path: Path) ->
     (row,) = table_rows(wb, "categories")
     (chunk,) = table_rows(wb, "categories_long_text")
     assert row["Name"] + chunk["value"] == BIG and (chunk["field"], chunk["chunk"]) == ("Name", "2")
+    assert chunk["record_key"] == row["record_key"] and row["record_key"]
 
 
 def test_a_failed_workbook_rename_publishes_neither_workbook_nor_pictures_and_keeps_the_old_workbook(

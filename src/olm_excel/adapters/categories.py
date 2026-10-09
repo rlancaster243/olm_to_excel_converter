@@ -10,8 +10,8 @@ from olm_excel.core.xlsx_writer import CHUNK_UTF16, Table, WorkbookWriter, chunk
 
 NAME = "OPFCategoryCopyName"
 COLOR = "OPFCategoryCopyBackgroundColor"
-HEADER = ("source_member", "ordinal", "Name", "BackgroundColor")
-LONG_TEXT_HEADER = ("source_member", "ordinal", "field", "chunk", "value")
+HEADER = ("record_key", "source_member", "ordinal", "Name", "BackgroundColor")
+LONG_TEXT_HEADER = ("record_key", "source_member", "ordinal", "field", "chunk", "value")
 
 
 class CategoriesAdapter:
@@ -95,18 +95,18 @@ class _Session:
     def _flush(self) -> None:
         if not self._n:
             return
-        member, ordinal = self._ctx.member.path, str(self._n)
+        key, member, ordinal = self._ctx.record_key(self._n), self._ctx.member.path, str(self._n)
         cells = []
         for label, attribute in (("Name", NAME), ("BackgroundColor", COLOR)):
             text = self._attrs.get(attribute, "")
             if len(text) > CHUNK_UTF16 // 2 and utf16_len(text) > CHUNK_UTF16:
                 text, *rest = chunk_utf16(text)
                 for number, chunk in enumerate(rest, start=2):
-                    self._adapter.long_text.append((member, ordinal, label, str(number), chunk))
+                    self._adapter.long_text.append((key, member, ordinal, label, str(number), chunk))
             cells.append(text)
-        self._table.append((member, ordinal, *cells))
+        self._table.append((key, member, ordinal, *cells))
         self.records_seen += 1
-        self._ctx.end_record(self._ctx.record_key(self._n))
+        self._ctx.end_record(key)
 
     def finish(self) -> None:
         self._flush()
