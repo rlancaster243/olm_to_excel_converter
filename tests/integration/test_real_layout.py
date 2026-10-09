@@ -376,8 +376,8 @@ def test_a_contact_image_picture_does_not_change_the_add_picture_pairing(tmp_pat
     result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}), export_images=True)
     rows = table_rows(wb, "contact_pictures")
     assert [(r["picture_ordinal"], r["source_element"], r["type_declared"], r["detected_format"]) for r in rows] == [
-        ("1", "OPFContactAddPicture", "image/png", "png"),
-        ("2", "OPFContactCopyContactImage", "", "png"),
+        ("1", "OPFContactCopyContactImage", "", "png"),  # document order: ContactImage comes first in the record
+        ("2", "OPFContactAddPicture", "image/png", "png"),
     ]
     assert result.outcome is Outcome.SUCCESS
 
@@ -631,3 +631,57 @@ def test_primary_category_text_after_a_child_element_is_unknown_not_overwritten(
     assert "second" in raw_values  # kept, never silently overwritten
     assert result.outcome is Outcome.PARTIAL
     assert result.totals.source_values == result.totals.mapped + result.totals.structural + result.totals.raw + result.totals.lost
+
+
+@pytest.mark.parametrize("token", ["R0lGODlhAAAA", "Qk1ABCDEFGHIJKLMNOPQRSTU", "SUkqAAAAAAAA", "iVBORw0KGgo="])
+def test_short_contact_image_tokens_that_look_like_magic_bytes_stay_text(tmp_path: Path, token: str) -> None:  # review 2
+    exp = Expect()
+    xml = contacts_member(1, exp, "c.xml", picture_every=0, contact_image=token)
+    result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}))
+    (contact,) = table_rows(wb, "contacts")
+    assert contact["ContactImage"] == token
+    assert table_rows(wb, "contact_pictures") == []
+    assert result.outcome is Outcome.SUCCESS
+
+
+def test_every_contact_image_value_that_is_an_image_is_a_picture_never_raw(tmp_path: Path) -> None:  # review 2
+    exp = Expect()
+    extra = f"<OPFContactCopyContactImage{SP}>{PIC}</OPFContactCopyContactImage>"  # a second ContactImage element
+    xml = contacts_member(1, exp, "c.xml", picture_every=0, contact_image=PIC, extra=extra)
+    result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}), export_images=True)
+    rows = table_rows(wb, "contact_pictures")
+    assert [r["source_element"] for r in rows] == ["OPFContactCopyContactImage"] * 2
+    assert all(PIC not in str(r) for r in table_rows(wb, "contacts"))
+    assert "raw_0001" not in sheet_names(wb) and result.outcome is Outcome.SUCCESS
+
+
+def test_an_oversized_contact_image_is_recognised_from_its_prefix_and_kept_out_of_cells(tmp_path: Path) -> None:  # review 2
+    exp = Expect()
+    xml = contacts_member(1, exp, "c.xml", picture_every=0, contact_image=PIC)
+    result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}), export_images=True, max_picture_bytes=10)
+    (contact,) = table_rows(wb, "contacts")
+    (picture,) = table_rows(wb, "contact_pictures")
+    assert contact["ContactImage"] == ""
+    assert (picture["encoding"], picture["detected_format"], picture["exported_file"]) == ("unknown", "png", "")
+    assert result.outcome is Outcome.PARTIAL and result.lost_by_reason == {"PICTURE_NOT_EXPORTED": 1}
+
+
+def test_picture_ordinal_follows_document_order_across_elements(tmp_path: Path) -> None:  # review 2
+    exp = Expect()
+    extra = f"<OPFContactAddPicture{SP}>{PIC}</OPFContactAddPicture>"  # the helper writes ContactImage earlier
+    xml = contacts_member(1, exp, "c.xml", picture_every=0, contact_image=PIC, extra=extra)
+    _, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}), export_images=True)
+    rows = table_rows(wb, "contact_pictures")
+    assert [(r["picture_ordinal"], r["source_element"]) for r in rows] == [
+        ("1", "OPFContactCopyContactImage"), ("2", "OPFContactAddPicture"),
+    ]
+
+
+def test_a_scalar_whose_content_went_to_raw_is_not_listed_as_empty(tmp_path: Path) -> None:  # review 2
+    exp = Expect()
+    extra = f"<OPFContactCopyTitle{SP}><x/>tail</OPFContactCopyTitle>"
+    xml = contacts_member(1, exp, "c.xml", picture_every=0, extra=extra)
+    result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}))
+    (contact,) = table_rows(wb, "contacts")
+    assert "Title" not in contact["empty_fields"].split("; ")
+    assert "tail" in {r["value"] for r in table_rows(wb, "raw_0001")} and result.outcome is Outcome.PARTIAL

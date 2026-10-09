@@ -125,6 +125,33 @@ def detect_image_format(data: bytes) -> str:
 
 _EXTENSIONS = {"jpeg": "jpg"}
 
+# A ContactImage value is treated as a picture only on strong evidence: its content is unverified (E12), so a
+# short token whose first bytes happen to look like a magic number (e.g. "R0lGODlh" decodes to "GIF89a") stays text.
+_STRONG_FORMATS = frozenset({"png", "jpeg", "gif", "webp", "heic"})  # signatures of 3+ bytes plus structure
+MIN_IMAGE_BYTES = 64
+_PREFIX_CHARS = 88  # base64 characters decoded to sniff an oversized value's signature (66 bytes)
+
+
+def contact_image_kind(text: str, max_bytes: int) -> tuple[str, bytes | None] | None:
+    """Classify an OPFContactCopyContactImage value as an image payload, or None to keep it as cell text.
+
+    Returns (detected format, decoded bytes) for an image within the size cap, or (format, None) for an image
+    whose signature is recognised from its first characters but which is too large to decode.
+    """
+    decoded = decode_payload(text, max_bytes)
+    if decoded is not None:
+        fmt = detect_image_format(decoded)
+        strong = fmt in _STRONG_FORMATS or (fmt == "bmp" and int.from_bytes(decoded[2:6], "little") == len(decoded))
+        return (fmt, decoded) if strong and len(decoded) >= MIN_IMAGE_BYTES else None
+    if len(text) > max_bytes * 4 // 3 + 8:  # too large to decode: sniff the signature from a prefix only
+        head = _WHITESPACE.sub("", text[: _PREFIX_CHARS * 2])[:_PREFIX_CHARS]
+        try:
+            fmt = detect_image_format(base64.b64decode(head, validate=True))
+        except (binascii.Error, ValueError):
+            return None
+        return (fmt, None) if fmt in _STRONG_FORMATS else None
+    return None
+
 
 @dataclass(slots=True)
 class _Record:
@@ -137,7 +164,8 @@ class _Record:
     lists: dict[tuple[str, int], str] = field(default_factory=dict)
     pictures: list[SourceValue] = field(default_factory=list)
     picture_types: list[SourceValue] = field(default_factory=list)
-    image_fields: list[tuple[SourceValue, bytes]] = field(default_factory=list)  # OPFContactCopyContactImage images
+    image_fields: list[SourceValue] = field(default_factory=list)  # OPFContactCopyContactImage values that are images
+    content: set[str] = field(default_factory=set)  # scalar tags with any content value (text or nested), wherever it went
 
 
 class ContactsAdapter:
@@ -240,8 +268,13 @@ class _Session:
                 rec.present.add(segs[2][0])
             return
         depth = len(segs)
+        if depth >= 3 and segs[2][0] in COLUMNS and segs[2][1] == 1 and (depth > 3 or kind is ValueKind.TEXT):
+            rec.content.add(segs[2][0])  # the element has content, so it is never "present but empty"
         if depth == 3:
             tag, idx = segs[2]
+            if tag == CONTACT_IMAGE and kind is ValueKind.TEXT and contact_image_kind(value.value, self._a.max_picture_bytes):
+                rec.image_fields.append(value)  # a picture at any index or position: never cell or raw text
+                return
             if tag == PICTURE and kind is ValueKind.TEXT:  # every text value is a picture, any index
                 rec.pictures.append(value)  # settled at flush, once the encoding is known
                 return
@@ -250,11 +283,6 @@ class _Session:
                 return
             if idx == 1 and not attribute and (kind is ValueKind.EMPTY or value.text_position == 0):
                 if tag in COLUMNS:
-                    if tag == CONTACT_IMAGE and kind is ValueKind.TEXT:
-                        payload = decode_payload(value.value, self._a.max_picture_bytes)
-                        if payload is not None and detect_image_format(payload) != "unknown":
-                            rec.image_fields.append((value, payload))  # a picture, not cell text: no image bytes in cells
-                            return
                     rec.scalars[tag] = value.value
                     if kind is ValueKind.EMPTY:
                         rec.present.add(tag)
@@ -295,8 +323,7 @@ class _Session:
         key = ctx.record_key(rec.ordinal)
         fit = self._fit
         cells = [fit(key, COLUMNS[e], rec.scalars.get(e, "")) for e in SCALAR_ELEMENTS]
-        routed = {CONTACT_IMAGE} if rec.image_fields else set()  # went to contact_pictures, so not empty
-        empty = [COLUMNS[e] for e in SCALAR_ELEMENTS if e in rec.present and e not in routed and not rec.scalars.get(e)]
+        empty = [COLUMNS[e] for e in SCALAR_ELEMENTS if e in rec.present and e not in rec.content]
         a.contacts.append((
             key, ctx.member.path, str(rec.ordinal), *cells,
             fit(key, "PrimaryCategory_Name", rec.primary.get(CATEGORY_ATTRS[0], "")),
@@ -341,17 +368,24 @@ class _Session:
         else:
             for stray in rec.picture_types:
                 ctx.unknown(stray, key)
-        # Each entry: (source element, value, decoded bytes or None, declared type). A ContactImage picture was
-        # decoded and recognised as an image at feed time, and never pairs with OPFContactAddPictureType.
-        items = [(PICTURE, p, decode_payload(p.value, a.max_picture_bytes), declared) for p in rec.pictures]
-        items += [(CONTACT_IMAGE, p, payload, "") for p, payload in rec.image_fields]
-        for number, (element, picture, decoded, type_declared) in enumerate(items, start=1):
+        # Pictures are numbered in document order. A ContactImage picture never pairs with OPFContactAddPictureType.
+        # Payloads are decoded one at a time here, so only one decoded picture is held in memory.
+        items = sorted(
+            [(p.node_ordinal, PICTURE, p, declared) for p in rec.pictures]
+            + [(p.node_ordinal, CONTACT_IMAGE, p, "") for p in rec.image_fields]
+        )
+        for number, (_, element, picture, type_declared) in enumerate(items, start=1):
             text = picture.value
+            if element == CONTACT_IMAGE:
+                fmt, decoded = contact_image_kind(text, a.max_picture_bytes)
+            else:
+                decoded = decode_payload(text, a.max_picture_bytes)
+                fmt = detect_image_format(decoded) if decoded is not None else ""
             if decoded is not None:
-                encoding, fmt, basis = "base64", detect_image_format(decoded), "decoded_bytes"
+                encoding, basis = "base64", "decoded_bytes"
                 digest, size = hashlib.sha256(decoded).hexdigest(), str(len(decoded))
             else:
-                encoding, fmt, basis, size = "unknown", "", "text", ""
+                encoding, basis, size = "unknown", "text", ""
                 digest = hashlib.sha256(text.encode("utf-8", "surrogatepass")).hexdigest()
             exported = ""
             if decoded is not None and a.picture_sink is not None:

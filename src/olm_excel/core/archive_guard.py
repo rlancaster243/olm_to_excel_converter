@@ -12,7 +12,7 @@ per-member uncompressed size, per-member compression ratio.
 
 The default limits are placeholders, not a calibrated ZIP-bomb defense (09
 Runbook 7). They are far above the one real export seen (74 MB largest member,
-stored uncompressed): 2 GiB per member is about 28 times that member, so they
+stored uncompressed): 2 GiB per member is about 29 times that member, so they
 bound the work a hostile archive can cause rather than catch every one; the
 compression ratio cap is the main early guard. Rejecting a legitimate outlier
 is still the cheaper error, and the operator can allow one explicitly
