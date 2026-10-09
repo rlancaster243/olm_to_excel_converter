@@ -9,7 +9,7 @@
 
 This repository will hold an **Outlook for Mac (OLM) → Excel** converter (contacts-first in early phases; broader record families described in the proposed [fidelity PRD](docs/fidelity/02-PRD-AND-ACCEPTANCE.md)), split from the [mbox_to_eml_converter](https://github.com/rlancaster243/mbox_to_eml_converter) monolith. Documentation, synthetic samples, and parent source snapshots live under **[docs/](docs/README.md)**.
 
-**Status:** W04 core in progress. The source-value walker, string-only XLSX writer, raw extractor and field-level completeness rule work on XML streams. The CLI `convert` command still exits with code 2: it is not wired to archives until the W02 archive guard exists.
+**Status:** converts contacts and categories from the one real OLM layout seen so far (evidence E09, one Outlook version). Other record families (mail, calendar, tasks) are not supported: they are listed in the workbook and their values are kept as raw rows, never guessed.
 
 ## Development
 
@@ -28,6 +28,27 @@ The full suite takes about a minute; most of that is one test that writes and re
 - `tests/unit/test_walker.py`: the streaming walker matches a whole-document reference on randomized mixed content.
 
 Never commit `.olm` files other than the synthetic sample; `.gitignore` blocks them.
+
+## Converting an archive
+
+```bash
+.venv/bin/olm-excel convert "/path/to/Outlook for Mac Archive.olm" -o ~/Desktop/olm-out
+```
+
+The archive is opened read-only and never extracted to disk. The output directory gets `<name>.xlsx`. The terminal shows counts and file names only, never contents.
+
+Every source value ends up as exactly one of: **mapped** (in a proper column), **structural** (format bookkeeping such as `xml:space`, checked and counted, not exported), **raw** (kept as a row in the `raw_NNNN` sheets with its path) or **lost** (reported with a reason). The workbook's `_manifest` sheet leads with the outcome and these counts.
+
+| Outcome | Meaning | Exit code |
+|---|---|---|
+| SUCCESS | every value mapped or structural | 0 |
+| PARTIAL | usable output, but some values are raw or lost (for example pictures not exported, unknown fields, non-XML members) | 3 |
+| UNSUPPORTED | nothing in the archive has a reader; values are kept as raw rows | 4 |
+| FAILED | unsafe or unreadable archive, or the output could not be verified; no workbook is written | 1 |
+
+Options: `--export-images` writes contact pictures as separate files in `<name>-pictures/` (without it the pictures are reported as lost, so the result is PARTIAL); `--no-raw-extract` reports unmapped values as lost instead of writing raw rows (the outcome does not change); `--overwrite` replaces an existing workbook. Existing outputs are never overwritten by default, and an existing pictures directory is never replaced.
+
+Sheets: `_manifest`, `_members`, `_warnings`, `_unsupported`, then `contacts`, `contact_emails`, `contact_categories`, `contact_lists`, `contact_pictures`, `categories`, `contact_long_text` (only if a value exceeds 32,000 UTF-16 units) and the raw sheets when needed. Every value is written as exact text: formulas stay inert, dates are not converted.
 
 ## Profiling a real archive without sharing its contents
 

@@ -15,10 +15,18 @@ from typing import BinaryIO
 
 from olm_excel.core.completeness import MemberAccount, Outcome, decide_outcome, manifest_rows
 from olm_excel.core.errors import ConversionError, ErrorCode
-from olm_excel.core.walker import WalkLimits, count_source_values, iter_source_values
+from olm_excel.core.walker import SourceValue, WalkLimits, count_source_values, iter_source_values
 from olm_excel.core.xlsx_writer import EXCEL_MAX_ROWS, Table, WorkbookWriter, chunk_utf16
 
-__all__ = ["RAW_COLUMNS", "RAW_INDEX_COLUMNS", "RawExtractor", "XmlMember", "count_source_values", "write_raw_workbook"]
+__all__ = [
+    "RAW_COLUMNS",
+    "RAW_INDEX_COLUMNS",
+    "MemberRawState",
+    "RawExtractor",
+    "XmlMember",
+    "count_source_values",
+    "write_raw_workbook",
+]
 
 RAW_COLUMNS = (
     "raw_key",
@@ -56,12 +64,25 @@ class XmlMember:
     open: Callable[[], BinaryIO]
 
 
-class RawExtractor:
-    """Extract unclaimed XML members into raw sheets and account for every value.
+@dataclass(slots=True)
+class MemberRawState:
+    """Per-member bookkeeping for the raw index."""
 
+    member: XmlMember
+    first_key: str = ""
+    last_key: str = ""
+    first_partition: int = 0
+    stop: ErrorCode | None = None
+
+
+class RawExtractor:
+    """Route source values nobody mapped to raw rows, and account for each one.
+
+    Used for whole unclaimed XML members (``extract``) and for unknown fields
+    inside claimed records (``begin_member`` / ``route`` / ``end_member``).
     With ``enabled=False`` nothing is written, but every value is still
-    counted and reported as lost (RAW_EXTRACT_DISABLED), so the outcome
-    does not depend on the flag.
+    reported as lost (RAW_EXTRACT_DISABLED), so the outcome never depends on
+    the flag.
     """
 
     def __init__(
@@ -73,74 +94,84 @@ class RawExtractor:
         max_values: int = DEFAULT_MAX_VALUES,
         limits: WalkLimits = WalkLimits(),
     ) -> None:
+        self._writer = writer
         self._submission_id = submission_id
         self._enabled = enabled
         self._remaining = max_values
         self._limits = limits
-        self._index: Table | None = None
-        self._raw: Table | None = None
+        self._raw: Table | None = None  # created on the first raw row, so clean conversions have no raw sheets
         self._index_rows: list[Sequence[str]] = []
-        if enabled:
-            self._index = writer.add_table("_raw_index", RAW_INDEX_COLUMNS)
-            self._raw = writer.add_table("raw", RAW_COLUMNS, partitioned=True)
+
+    @property
+    def enabled(self) -> bool:
+        return self._enabled
+
+    def begin_member(self, member: XmlMember) -> MemberRawState:
+        return MemberRawState(member)
+
+    def route(self, state: MemberRawState, value: SourceValue, account: MemberAccount, record_key: str = "") -> None:
+        """Write one unmapped source value as raw rows, or count it as lost."""
+        if not self._enabled:
+            account.add_lost(ErrorCode.RAW_EXTRACT_DISABLED)
+            return
+        if self._remaining <= 0:
+            state.stop = ErrorCode.RAW_EXTRACT_LIMIT
+            account.add_lost(ErrorCode.RAW_EXTRACT_LIMIT)
+            return
+        if self._raw is None:
+            self._raw = self._writer.add_table("raw", RAW_COLUMNS, partitioned=True)
+        raw_key = f"{state.member.ordinal}:{value.node_ordinal}"
+        position = "" if value.text_position is None else str(value.text_position)
+        if not state.first_key:
+            state.first_key = raw_key
+            state.first_partition = self._raw.next_row_partition()
+        for chunk_no, chunk in enumerate(chunk_utf16(value.value), start=1):
+            self._raw.append((
+                raw_key, self._submission_id, state.member.path, record_key, value.element_path,
+                value.attribute, position, value.value_kind, chunk, str(chunk_no),
+            ))
+        account.raw += 1
+        self._remaining -= 1
+        state.last_key = raw_key
+
+    def end_member(self, state: MemberRawState, account: MemberAccount, stop: ErrorCode | None = None) -> None:
+        """Add the member's `_raw_index` row. Members with no raw activity and no stop get none."""
+        if not self._enabled:
+            return
+        stop = stop or state.stop
+        if not (state.first_key or stop or account.raw or account.lost_total):
+            return
+        partitions = self._raw.partition_names[state.first_partition:] if state.first_key else []
+        self._index_rows.append((
+            str(state.member.ordinal), state.member.path, state.first_key, state.last_key, " ".join(partitions),
+            str(account.source_values) if account.counted else f"uncounted (>= {account.source_values})",
+            str(account.raw), str(account.lost_total), str(stop is None).lower(), stop or "",
+        ))
 
     def extract(self, member: XmlMember) -> MemberAccount:
+        """Extract a whole unclaimed XML member: every value is routed to raw (or lost)."""
         account = MemberAccount(member.path)
-        if not self._enabled:
-            self._count_only(member, account, ErrorCode.RAW_EXTRACT_DISABLED)
-            return account
-
-        first_key = last_key = ""
-        first_partition = 0
+        state = self.begin_member(member)
         stop: ErrorCode | None = None
         try:
             with member.open() as stream:
                 for value in iter_source_values(stream, self._limits):
                     account.source_values += 1
-                    if self._remaining <= 0:
-                        stop = ErrorCode.RAW_EXTRACT_LIMIT
-                        account.add_lost(ErrorCode.RAW_EXTRACT_LIMIT)
-                        continue
-                    raw_key = f"{member.ordinal}:{value.node_ordinal}"
-                    position = "" if value.text_position is None else str(value.text_position)
-                    if not first_key:
-                        first_key = raw_key
-                        first_partition = self._raw.next_row_partition()
-                    for chunk_no, chunk in enumerate(chunk_utf16(value.value), start=1):
-                        self._raw.append((
-                            raw_key, self._submission_id, member.path, "", value.element_path,
-                            value.attribute, position, value.value_kind, chunk, str(chunk_no),
-                        ))
-                    account.raw += 1
-                    self._remaining -= 1
-                    last_key = raw_key
+                    self.route(state, value, account)
         except ConversionError as exc:
             if exc.code is ErrorCode.EXCEL_LIMIT:
                 raise
             account.mark_uncounted(exc.code)
             stop = exc.code
-        partitions = self._raw.partition_names[first_partition:] if first_key else []
-        self._index_rows.append((
-            str(member.ordinal), member.path, first_key, last_key, " ".join(partitions),
-            str(account.source_values) if account.counted else f"uncounted (>= {account.source_values})",
-            str(account.raw), str(account.lost_total), str(stop is None).lower(), stop or "",
-        ))
+        self.end_member(state, account, stop)
         return account
 
-    def _count_only(self, member: XmlMember, account: MemberAccount, reason: ErrorCode) -> None:
-        try:
-            with member.open() as stream:
-                for _ in iter_source_values(stream, self._limits):
-                    account.source_values += 1
-                    account.add_lost(reason)
-        except ConversionError as exc:
-            account.mark_uncounted(exc.code)
-
     def finish(self) -> None:
-        """Write the raw index. Call once, after every member is extracted."""
-        if self._index is not None:
+        """Write the raw index. Call once, after every member is processed."""
+        if self._index_rows:
+            index = self._writer.add_table("_raw_index", RAW_INDEX_COLUMNS)
             for row in self._index_rows:
-                self._index.append(row)
+                index.append(row)
 
 
 def write_raw_workbook(

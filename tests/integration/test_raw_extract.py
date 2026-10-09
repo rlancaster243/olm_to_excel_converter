@@ -56,7 +56,7 @@ def test_sample_raw_workbook_holds_every_value(sample_xml: bytes, tmp_path: Path
     long_note = [r for r in raw[1:] if r[9] == "2"]
     assert len(long_note) == 1  # the 40,000-character note is the only 2-chunk value
 
-    manifest = dict(read_rows(out, "_manifest")[1:9])
+    manifest = dict(read_rows(out, "_manifest")[1:10])
     assert manifest["outcome"] == "UNSUPPORTED" and manifest["notice"].startswith("NOT FULLY CONVERTED")
     assert manifest["raw"] == str(EXPECTED_SOURCE_VALUES)
     index = read_rows(out, "_raw_index")

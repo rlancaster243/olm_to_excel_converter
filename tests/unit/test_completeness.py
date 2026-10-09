@@ -8,8 +8,8 @@ from olm_excel.core.completeness import MemberAccount, Outcome, decide_outcome, 
 from olm_excel.core.errors import ConversionError, ErrorCode
 
 
-def account(source=10, mapped=0, raw=0, lost=0, counted=True) -> MemberAccount:
-    a = MemberAccount("m.xml", source_values=source, mapped=mapped, raw=raw)
+def account(source=10, mapped=0, raw=0, lost=0, counted=True, structural=0) -> MemberAccount:
+    a = MemberAccount("m.xml", source_values=source, mapped=mapped, structural=structural, raw=raw)
     if lost:
         a.add_lost(ErrorCode.RAW_EXTRACT_LIMIT, lost)
     if not counted:
@@ -24,6 +24,18 @@ def test_success_requires_every_value_mapped() -> None:
 @pytest.mark.parametrize("acct", [account(mapped=9, raw=1), account(mapped=9, lost=1), account(source=10, mapped=10, counted=False)])
 def test_any_raw_lost_or_uncounted_value_prevents_success(acct: MemberAccount) -> None:
     assert decide_outcome([acct], families_converted=1) is Outcome.PARTIAL
+
+
+def test_structural_values_count_toward_success_but_must_reconcile() -> None:
+    assert decide_outcome([account(mapped=6, structural=4)], families_converted=1) is Outcome.SUCCESS
+    with pytest.raises(ConversionError):
+        decide_outcome([account(mapped=6, structural=3)], families_converted=1)
+
+
+def test_picture_not_exported_is_a_loss_reason_that_prevents_success() -> None:
+    a = account(mapped=9)
+    a.add_lost(ErrorCode.PICTURE_NOT_EXPORTED)
+    assert decide_outcome([a], families_converted=1) is Outcome.PARTIAL
 
 
 def test_no_converted_family_is_unsupported_even_if_complete() -> None:
@@ -54,7 +66,7 @@ def test_only_defined_loss_reasons_are_accepted() -> None:
 
 def test_manifest_leads_with_outcome_notice_and_counts() -> None:
     rows = manifest_rows(Outcome.PARTIAL, [account(mapped=7, raw=2, lost=1)], raw_extract=True)
-    assert [k for k, _ in rows[:6]] == ["outcome", "notice", "source_values", "mapped", "raw", "lost"]
+    assert [k for k, _ in rows[:7]] == ["outcome", "notice", "source_values", "mapped", "structural", "raw", "lost"]
     assert rows[0] == ("outcome", "PARTIAL")
     assert rows[1][1].startswith("NOT FULLY CONVERTED")
     assert dict(rows)["lost"] == "1"

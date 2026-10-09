@@ -57,3 +57,17 @@ def reference_values(xml: bytes) -> list[tuple[str, str, str]]:
 
     walk(ET.fromstring(xml), False)
     return out
+
+
+def sheet_names(path: Path) -> list[str]:
+    wb = openpyxl.load_workbook(path, read_only=True)
+    names = list(wb.sheetnames)
+    wb.close()
+    return names
+
+
+def table_rows(path: Path, sheet: str) -> list[dict[str, str | None]]:
+    """Rows of a sheet as dicts keyed by the header row."""
+    rows = read_rows(path, sheet)
+    header = rows[0]
+    return [dict(zip(header, row)) for row in rows[1:]]

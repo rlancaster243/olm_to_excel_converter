@@ -13,7 +13,7 @@ Contract: docs/fidelity/04-CONTRACTS-AND-DATA.md, "XLSX delivery contract".
 from __future__ import annotations
 
 import os
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
 from types import TracebackType
 
@@ -68,11 +68,20 @@ def _check_sheet_name(name: str) -> None:
 class Table:
     """Rows appended to one sheet, or to numbered partitions of it."""
 
-    def __init__(self, writer: WorkbookWriter, name: str, header: Sequence[str] | None, partitioned: bool, max_rows: int):
+    def __init__(
+        self,
+        writer: WorkbookWriter,
+        name: str,
+        header: Sequence[str] | None,
+        partitioned: bool,
+        max_rows: int,
+        spill: bool = False,
+    ):
         self._writer = writer
         self._name = name
         self._header = tuple(header) if header else None
         self._partitioned = partitioned
+        self._spill = spill  # first sheet keeps `name`; overflow goes to name_0002, name_0003, ...
         self._max_rows = max_rows
         self.partition_names: list[str] = []
         self._sheet = None
@@ -86,19 +95,24 @@ class Table:
     def next_row_partition(self) -> int:
         """Index into ``partition_names`` of the sheet the next appended row lands in."""
         full = self._row >= self._max_rows
-        return len(self.partition_names) if full and self._partitioned else len(self.partition_names) - 1
+        return len(self.partition_names) if full and (self._partitioned or self._spill) else len(self.partition_names) - 1
 
     def _new_sheet(self) -> None:
-        name = f"{self._name}_{len(self.partition_names) + 1:04d}" if self._partitioned else self._name
+        number = len(self.partition_names) + 1
+        if self._partitioned or (self._spill and number > 1):
+            name = f"{self._name}_{number:04d}"
+        else:
+            name = self._name
         self._sheet = self._writer._add_worksheet(name)
         self.partition_names.append(name)
+        self._writer.sheet_rows[name] = 0
         self._row = 0
         if self._header:
             self._write(self._header)
 
     def append(self, row: Sequence[str]) -> None:
         if self._row >= self._max_rows:
-            if not self._partitioned:
+            if not (self._partitioned or self._spill):
                 raise ConversionError(ErrorCode.EXCEL_LIMIT, f"sheet {self._name} exceeds {self._max_rows} rows", scope="workbook")
             self._new_sheet()
         self._write(row)
@@ -113,6 +127,7 @@ class Table:
             if status != 0:  # -2 would mean XlsxWriter truncated the value
                 raise ConversionError(ErrorCode.EXCEL_LIMIT, f"write_string returned {status}", scope="workbook")
         self._row += 1
+        self._writer.sheet_rows[self.partition_names[-1]] = self._row
 
 
 class WorkbookWriter:
@@ -123,11 +138,20 @@ class WorkbookWriter:
         self.partial = self.target.with_name(self.target.name + ".partial")
         self._max_rows = max_rows
         self._names: set[str] = set()
+        self.sheet_rows: dict[str, int] = {}  # rows written per sheet, header included
         self._workbook = xlsxwriter.Workbook(str(self.partial), _WORKBOOK_OPTIONS)
         self._closed = False
 
-    def add_table(self, name: str, header: Sequence[str] | None = None, *, partitioned: bool = False) -> Table:
-        return Table(self, name, header, partitioned, self._max_rows)
+    def add_table(
+        self,
+        name: str,
+        header: Sequence[str] | None = None,
+        *,
+        partitioned: bool = False,
+        spill: bool = False,
+    ) -> Table:
+        """Add a sheet. ``partitioned`` numbers every sheet (raw_0001); ``spill`` only numbers overflow."""
+        return Table(self, name, header, partitioned, self._max_rows, spill)
 
     def _add_worksheet(self, name: str):
         _check_sheet_name(name)
@@ -136,14 +160,20 @@ class WorkbookWriter:
         self._names.add(name.lower())
         return self._workbook.add_worksheet(name)
 
-    def publish(self) -> Path:
-        """Close the workbook and atomically move it to ``target``."""
+    def publish(self, verify: Callable[[Path], None] | None = None) -> Path:
+        """Close the workbook, optionally verify the closed file, then atomically move it to ``target``."""
         try:
             self._workbook.close()
         except Exception as exc:
             self.abort()
             raise ConversionError(ErrorCode.OUTPUT_IO, f"workbook close failed: {type(exc).__name__}", scope="workbook") from exc
         self._closed = True
+        if verify is not None:
+            try:
+                verify(self.partial)
+            except BaseException:
+                self.partial.unlink(missing_ok=True)
+                raise
         os.replace(self.partial, self.target)
         return self.target
 

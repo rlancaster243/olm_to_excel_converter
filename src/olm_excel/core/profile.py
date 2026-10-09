@@ -32,6 +32,8 @@ from typing import Any
 
 from olm_excel import __version__
 from olm_excel.core.errors import ConversionError
+from olm_excel.core.sniff import SNIFF_BYTES as _SNIFF_BYTES
+from olm_excel.core.sniff import sniff_kind as _sniff
 from olm_excel.core.walker import ValueKind, WalkLimits, iter_source_values
 from olm_excel.core.xlsx_writer import EXCEL_CELL_MAX_UTF16, utf16_len
 
@@ -50,7 +52,6 @@ GENERIC_TOKENS = frozenset(
 _TOKEN_SPLIT = re.compile(r"[^a-z#]+")
 _INDEX = re.compile(r"\[(\d+)\]")
 _ID_LIKE = re.compile(r"[0-9A-Fa-f-]{8,}")  # hex IDs and GUIDs
-_SNIFF_BYTES = 64
 
 # Members larger than this, or expanding more than MAX_RATIO, are listed but not parsed.
 MAX_PARSE_BYTES = 2 * 1024**3
@@ -114,21 +115,6 @@ class SegmentRedactor:
     def path(self, member_path: str) -> str:
         segments = member_path.split("/")
         return "/".join(self.segment(s, is_file=i == len(segments) - 1) for i, s in enumerate(segments))
-
-
-def _sniff(head: bytes) -> str:
-    stripped = head.lstrip(b"\xef\xbb\xbf \t\r\n")
-    if stripped.startswith((b"<?xml", b"<")):
-        return "xml"
-    if head.startswith((b"\xff\xfe<", b"\xfe\xff\x00<")):
-        return "xml-utf16"
-    if head.startswith(b"PK\x03\x04"):
-        return "zip"
-    if head.startswith(b"bplist"):
-        return "binary-plist"
-    if not head:
-        return "empty"
-    return "binary"
 
 
 def _collapse(element_path: str) -> tuple[str, int, int]:

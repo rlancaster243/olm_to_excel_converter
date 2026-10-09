@@ -50,6 +50,7 @@ class SourceValue:
     value: str
     attribute: str = ""  # qualified attribute name, attribute rows only
     text_position: int | None = None  # text rows only: 0 = before first child, k = after k-th child
+    depth: int = 0  # depth of the containing element; the root element is 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,6 +63,7 @@ class _Frame:
     element: Element
     path: str
     preserve: bool
+    depth: int = 1
     child_count: int = 0
     last_child: Element | None = None
     child_tags: dict[str, int] = field(default_factory=dict)
@@ -92,7 +94,7 @@ def iter_source_values(member: BinaryIO, limits: WalkLimits = WalkLimits()) -> I
         if not text.strip() and has_children and not frame.preserve:
             return None  # formatting whitespace between child elements
         ordinal += 1
-        return SourceValue(ordinal, frame.path, ValueKind.TEXT, text, text_position=position)
+        return SourceValue(ordinal, frame.path, ValueKind.TEXT, text, text_position=position, depth=frame.depth)
 
     try:
         for event, element in SafeET.iterparse(member, events=("start", "end")):
@@ -118,11 +120,11 @@ def iter_source_values(member: BinaryIO, limits: WalkLimits = WalkLimits()) -> I
                     preserve = False
                 if len(stack) >= limits.max_depth:
                     raise ConversionError(ErrorCode.RESOURCE_LIMIT, f"element depth exceeds {limits.max_depth}")
-                frame = _Frame(element, path, preserve)
+                frame = _Frame(element, path, preserve, depth=len(stack) + 1)
                 stack.append(frame)
                 for name, attr_value in element.attrib.items():
                     ordinal += 1
-                    yield SourceValue(ordinal, path, ValueKind.ATTRIBUTE, attr_value, attribute=name)
+                    yield SourceValue(ordinal, path, ValueKind.ATTRIBUTE, attr_value, attribute=name, depth=frame.depth)
             else:
                 frame = stack.pop()
                 if frame.child_count == 0:
@@ -131,7 +133,7 @@ def iter_source_values(member: BinaryIO, limits: WalkLimits = WalkLimits()) -> I
                         yield value
                     elif not element.attrib:
                         ordinal += 1
-                        yield SourceValue(ordinal, frame.path, ValueKind.EMPTY, "")
+                        yield SourceValue(ordinal, frame.path, ValueKind.EMPTY, "", depth=frame.depth)
                 else:
                     value = text_value(frame, frame.last_child.tail, frame.child_count, has_children=True)
                     _release(frame)
