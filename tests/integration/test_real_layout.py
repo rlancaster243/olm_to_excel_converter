@@ -225,7 +225,15 @@ PIC = base64.b64encode(PNG_1X1).decode()
                      [("base64", "decoded_bytes", True, "")], 0, 0, Outcome.SUCCESS, id="no-type-element"),
         pytest.param(f"<OPFContactAddPictureType{SP}>orphan</OPFContactAddPictureType>", [], 0, 1, Outcome.PARTIAL, id="type-without-picture"),
         pytest.param(f"<OPFContactAddPicture{SP}>{PIC}</OPFContactAddPicture><OPFContactAddPicture{SP}>{PIC}</OPFContactAddPicture>",
-                     [("base64", "decoded_bytes", True, "")], 0, 1, Outcome.PARTIAL, id="second-picture-is-outside-the-known-shape"),
+                     [("base64", "decoded_bytes", True, ""), ("base64", "decoded_bytes", True, "")], 0, 0, Outcome.SUCCESS,
+                     id="second-picture-is-a-second-row"),
+        pytest.param(f"<OPFContactAddPicture{SP}>{PIC}</OPFContactAddPicture><OPFContactAddPictureType{SP}>a</OPFContactAddPictureType>"
+                     f"<OPFContactAddPictureType{SP}>b</OPFContactAddPictureType>",
+                     [("base64", "decoded_bytes", True, "")], 0, 2, Outcome.PARTIAL, id="one-picture-two-types-are-unpaired"),
+        pytest.param(f"<OPFContactAddPicture{SP}>{PIC}</OPFContactAddPicture><OPFContactAddPicture{SP}>{PIC}</OPFContactAddPicture>"
+                     f"<OPFContactAddPictureType{SP}>a</OPFContactAddPictureType>",
+                     [("base64", "decoded_bytes", True, ""), ("base64", "decoded_bytes", True, "")], 0, 1, Outcome.PARTIAL,
+                     id="two-pictures-one-type-are-unpaired"),
     ],
 )
 def test_pictures_that_do_not_decode_or_do_not_pair_are_reported_not_guessed(tmp_path: Path, extra, pictures, lost, raw, outcome) -> None:  # T31
@@ -234,6 +242,7 @@ def test_pictures_that_do_not_decode_or_do_not_pair_are_reported_not_guessed(tmp
     result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}), export_images=True)
     rows = table_rows(wb, "contact_pictures")
     assert [(r["encoding"], r["hash_basis"], r["exported_file"] != "", r["type_declared"]) for r in rows] == pictures
+    assert [r["picture_ordinal"] for r in rows] == [str(n) for n in range(1, len(pictures) + 1)]
     assert sum(result.lost_by_reason.values()) == lost and result.totals.raw == raw
     assert result.outcome is outcome
 

@@ -226,18 +226,18 @@ class _Session:
         depth = len(segs)
         if depth == 3:
             tag, idx = segs[2]
+            if tag == PICTURE and kind is ValueKind.TEXT:  # every text value is a picture, any index
+                rec.pictures.append(value)  # settled at flush, once the encoding is known
+                return
+            if tag == PICTURE_TYPE and kind is ValueKind.TEXT:  # paired at flush only
+                rec.picture_types.append(value)
+                return
             if idx == 1 and not attribute and (kind is ValueKind.EMPTY or value.text_position == 0):
                 if tag in COLUMNS:
                     rec.scalars[tag] = value.value
                     if kind is ValueKind.EMPTY:
                         rec.empty.append(COLUMNS[tag])
                     ctx.mapped(value)
-                    return
-                if tag == PICTURE and kind is ValueKind.TEXT:
-                    rec.pictures.append(value)  # settled at flush, once the encoding is known
-                    return
-                if tag == PICTURE_TYPE and kind is ValueKind.TEXT:
-                    rec.picture_types.append(value)
                     return
         elif depth == 4:
             container, cidx = segs[2]
@@ -310,7 +310,7 @@ class _Session:
     def _flush_pictures(self, rec: _Record, key: str) -> None:
         ctx, a = self._ctx, self._a
         declared = ""
-        if len(rec.pictures) == 1 and len(rec.picture_types) == 1:
+        if len(rec.pictures) == 1 and len(rec.picture_types) == 1:  # pair only exactly one of each
             declared = rec.picture_types[0].value
             ctx.mapped(rec.picture_types[0])
         else:
