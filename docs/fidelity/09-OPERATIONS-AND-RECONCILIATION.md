@@ -12,7 +12,7 @@ Per archive: job ID, SHA-256, byte size, archive member count, adapter signature
 4 Output writing failure/disk full: quarantine/delete temp workbook; never publish damaged XLSX; preserve job failure report.
 5 Cancelled or interrupted run: terminate at checkpoint, purge temps and report CANCELLED/FAILED accurately; verify cleanup.
 6 Privacy event: stop processing, isolate artifacts, apply incident response specified by environment owner; do not retain files to aid debugging without consent.
-7 Resource exhaustion: halt offending archive, preserve independent sibling results; adjust limits only after measurements and ADR review.
+7 Resource exhaustion: halt offending archive, preserve independent sibling results; adjust limits only after measurements and ADR review. Archive guard defaults are deliberately tight placeholders sized from E09 (largest member 74 MB, stored uncompressed): 1,000,000 entries, 64 GiB total uncompressed, 2 GiB per member, compression ratio 100 per member. Rejecting a legitimate outlier is the cheaper error, and the operator can allow one explicitly (`--max-member-gib`, `--max-ratio`). There is no wall-clock parse limit yet (N03); tracked under W08.
 
 ## Support and compatibility matrix
 Published matrix by Outlook export version / observed schema fingerprint / families / max tested size / limitations / validated fixture hash / adapter release. Mark untested permutations UNKNOWN, not supported.

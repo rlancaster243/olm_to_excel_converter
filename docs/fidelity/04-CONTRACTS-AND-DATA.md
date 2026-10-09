@@ -99,7 +99,7 @@ Sheets:
 - `contact_categories`: one row per `category` under `OPFContactCopyCategoryList`. Columns: `record_key`, `ordinal`, `Name`, `BackgroundColor`.
 - `contact_lists`: one row per `string` under `OPFContactCopyChildren` or `OPFContactCopyFuriganaChildrensNames`. Columns: `record_key`, `list_source`, `ordinal`, `value`.
 - `contact_pictures`: see Contact pictures.
-- `contact_long_text`: only when a scalar value exceeds 32,000 UTF-16 units. The main cell holds chunk 1 and this sheet holds chunks 2 to n (`record_key`, `field`, `chunk`, `value`), so main cell plus chunks reproduces the value exactly.
+- `contact_long_text`: only when some text cell of a contacts-family sheet exceeds 32,000 UTF-16 units (scalar fields, email, category, list and picture-type values alike, so no single value can fail an archive). The main cell holds chunk 1 and this sheet holds chunks 2 to n (`record_key`, `field`, `chunk`, `value`), so main cell plus chunks reproduces the value exactly. `field` is the column name for `contacts` cells and `<sheet>/<list source>/<ordinal>/<column>` for child-sheet cells. The `categories` sheet uses `categories_long_text` (`source_member`, `ordinal`, `field`, `chunk`, `value`) the same way.
 - `categories`: one row per `category` in a `categories-olm-v1` member. Columns: `source_member`, `ordinal`, `Name`, `BackgroundColor`.
 
 Typing (ADR-011): every contact value is written as exact source text. Birthday, Anniversary and ModDate are not converted to Excel dates and have no parsed columns in v1.
