@@ -65,7 +65,7 @@ A success state must never be inferred merely from “XLSX created.”
 - Is “full” intended to include messages, calendar, tasks, notes, groups and attachment metadata? Proposed yes.
 - Should attachments themselves be packaged alongside workbook? Proposed opt-in separate files with integrity hash, never embedded by default.
 - Confirm output file naming, sharing model, Excel locale/date conventions, batch ceiling, and target operating platform.
-- Decide whether partial results should be downloadable with prominent warnings (proposed yes).
 
 ## Decided acceptance choices
+- 2026-10-09, product owner: PARTIAL and UNSUPPORTED results with a verified workbook are **downloadable**, so their output can be assessed. Before download and inside the workbook, the UI and `_manifest` must state that the result is not fully converted, with the outcome state and the mapped/raw/lost counts. A PARTIAL or UNSUPPORTED download is never presented like a SUCCESS. FAILED and CANCELLED results publish no workbook.
 - 2026-10-09, product owner: raw extract for unrecognized schemas is **default-on** (F13, ADR-008). Contract mechanics in 04 remain PROPOSED pending architecture review.

@@ -9,7 +9,7 @@ W02: Safe archive intake — ZIP guard, member inventory, quotas, malformed arch
 W03: Schema discovery and adapter API — probes, registry, conflict resolution and unknown inventory; the adapter API fixes the source-value walker interface adapters consume (implemented in W04). Exit: deterministic selection on labeled fixtures.
 W04: Canonical envelope and coverage accounting — provenance/identity/time/multivalue records, plus the core source-value walker, field-level completeness counters and the default-on raw extractor (04 Source values, Raw extract and Completeness contracts, ADR-008). Exit: independently checked contract tests including T17-T24.
 W05: Contacts vertical slice — a **real** format contact adapter, streaming, normalized sheet export and warnings. Exit Q2.
-W06: Batch orchestration and surface — multi-upload local UI + CLI, cancel, progress, per-file download, aggregate ZIP. Exit Q3.
+W06: Batch orchestration and surface — multi-upload local UI + CLI, cancel, progress, per-file download with outcome labeling (T25), aggregate ZIP. Exit Q3.
 W07: Family adapters — messages/calendar/tasks/notes/groups and attachment metadata, each gated by real reference exports; dependencies independent where possible. Exit Q4 per family, no speculative support checkboxes.
 W08: Hardening — large XML memory profile, adversarial/fuzz, cleanup, Excel boundary cases, stable packaging and privacy review. Exit Q5.
 W09: Qualified release — documented support matrix, user guide, limitations, release artifacts, recovery playbook and monitoring profile. Exit: owner accepts scope-limited release.

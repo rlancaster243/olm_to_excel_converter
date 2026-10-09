@@ -24,7 +24,7 @@ Golden expected outputs are independently derived from real Outlook sample inspe
 | T04 | novel unrecognized field | no guessed mapping; audit entry and explicit partiality |
 | T05 | multiple accounts and member path variants | correct provenance, correct adapter routing |
 | T06 | unknown mail/calendar/task/note/group variant | honest UNSUPPORTED/PARTIAL, not false SUCCESS |
-| T07 | Excel hostile value prefixes, Unicode and whitespace | no executable formulas; exact text roundtrip |
+| T07 | Excel hostile value prefixes, Unicode and whitespace | no formula cells in the sheet XML (cell type checked, not just value: a reader returns `=…` text for live formulas too); exact text roundtrip |
 | T08 | >1,048,576 family records or >32,767 char values | partitioning/sidecar or explicit loss-free report |
 | T09 | malformed XML, entities, nested depth | bounded rejection and safe error |
 | T10 | ZIP bomb/traversal/entry count breach | early controlled rejection and no filesystem escape |
@@ -42,6 +42,7 @@ Golden expected outputs are independently derived from real Outlook sample inspe
 | T22 | whitespace-only leaf text, `xml:space="preserve"`, empty element, element with attributes only | counted per 04 Source values; empty vs whitespace vs absent distinguishable in output |
 | T23 | value > 32,000 UTF-16 units containing astral characters, with a chunk starting with `=` | chunks ≤ 32,000 UTF-16 units, no split surrogate pair, concatenated chunks equal the source exactly, no executable formula |
 | T24 | adapter that under-reports mapped ordinals | core counts unchanged; unreported values routed to raw; outcome not SUCCESS |
+| T25 | download of PARTIAL and UNSUPPORTED results | download offered; UI shows outcome and mapped/raw/lost counts before download; `_manifest` first rows state the same; FAILED/CANCELLED offer no workbook |
 
 Schema-variant fixtures T17/T18 are synthetic mutations of `docs/samples/sample.olm`. Their oracle is the source value count from an independent walker over the unmodified XML: 241,487 for the committed sample (77,592 attribute, 163,895 text, 0 empty; 542 values contain astral characters), counted 2026-10-09 under the 04 Source values definition. Recount when the fixture or the definition changes. The mutations change names, not values, so each variant must also total 241,487.
 

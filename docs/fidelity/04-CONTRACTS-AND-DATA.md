@@ -68,7 +68,7 @@ Sheets: `raw_0001`, `raw_0002`, ... partitioned at the Excel row cap, plus `_raw
 Semantics:
 - Raw rows make no semantic claim. They are never promoted into family sheets, typed, or joined to canonical columns by the tool. Promotion happens only by building an adapter (ADR-007).
 - The outcome is decided by the field-level completeness rule (Completeness contract), from source values, not from whether raw rows were written. Turning raw extract off changes where unmapped values are reported (lost instead of raw), never the outcome.
-- Downloadability of PARTIAL and UNSUPPORTED results follows the OPEN acceptance choice in 02. If partial results are approved as downloadable, an UNSUPPORTED result with a verified raw workbook is downloadable with the same warning treatment as PARTIAL.
+- PARTIAL and UNSUPPORTED results with a verified workbook are downloadable for assessment (02 decided acceptance choices). The UI shows the outcome state and mapped/raw/lost counts before download, and `_manifest` repeats them as its first rows, so the file never reads as a full conversion.
 - Manifest records `raw_extract` on/off, source values mapped/raw/lost per member, partitions and any `RAW_EXTRACT_LIMIT` stop.
 - Raw values are as sensitive as canonical values: same cell policy, same logging exclusions.
 
