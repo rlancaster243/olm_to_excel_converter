@@ -52,6 +52,7 @@ Golden expected outputs are independently derived from real Outlook sample inspe
 | T32 | date fields (`Birthday`, `Anniversary`, `ModDate`) and every scalar | exact source text; no date-typed cells |
 | T33 | unknown element under a contact | raw row with the contact's `record_key`; PARTIAL |
 | T34 | contacts member at an unusual path or file name; root renamed | claimed by content when structure matches; not claimed when the root differs |
+| T35 | outcome notice (F17) | picture-only PARTIAL names the count and `--export-images`; raw, lost-for-other-reasons, uncounted, non-XML or warnings remove the "only because" wording; export on gives SUCCESS and "Fully converted."; undecodable pictures with export on never advise export; `_manifest` notice equals the CLI line |
 
 Schema-variant fixtures T17/T18 are synthetic mutations of `docs/samples/sample.olm`. Their oracle is the source value count from an independent walker over the unmodified XML: 241,487 for the committed sample (77,592 attribute, 163,895 text, 0 empty; 542 values contain astral characters), counted 2026-10-09 under the 04 Source values definition. Recount when the fixture or the definition changes. The mutations change names, not values, so each variant must also total 241,487.
 

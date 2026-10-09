@@ -33,6 +33,7 @@ G7 Archives with unrecognized schemas still deliver their readable values, as a 
 | F14 | Account for every source value as mapped, structural, raw or lost, per member and family (04 field-level completeness rule) | Manifest counts reconcile on every fixture; any raw or lost value prevents SUCCESS |
 | F15 | Check declared structural values (for example `xml:space`, root `elementCount`) and report them as a separate count; a failed check is never structural | Structural fixtures T26-T28: counts reconcile; mismatch gives PARTIAL and a warning |
 | F16 | Contact pictures: metadata sheet always; image files only on opt-in export; never binary in cells | T31: metadata row per picture, content-addressed files on export, `PICTURE_NOT_EXPORTED` otherwise |
+| F17 | Explain the outcome in one sentence shared by `_manifest` and CLI/UI. When contact pictures that image export would write are the only reason for PARTIAL, state it with the count and the opt-in that fixes it; with any other reason, list every reason and never imply image export alone gives SUCCESS | T35: picture-only message and count; mixed reasons; export on gives SUCCESS with no message; undecodable pictures with export on never advise export |
 
 ## Nonfunctional requirements
 N01 Correctness over coverage claims; cannot label a run SUCCESS when any in-scope record is unaccounted for or any source value is raw or lost.
@@ -74,3 +75,4 @@ A success state must never be inferred merely from “XLSX created.”
 - 2026-10-09, product owner: **structural values**. `xml:space` and the root `elementCount` are declared structural: checked, not exported, counted separately (F15, ADR-009). Recorded from the product owner's verbatim selection "Yes (Recommended)", relayed through a second Claude session; please correct here if it was misrecorded.
 - 2026-10-09, product owner: **contact pictures**. Metadata sheet plus optional export of the images as separate files (F16, ADR-010). Verbatim selection "Metadata + image files (Recommended)", relayed the same way.
 - 2026-10-09, product owner: **dates**. Contacts v1 keeps dates as exact text (ADR-011). Verbatim selection "Keep as text (Recommended)", relayed the same way.
+- 2026-10-09, product owner, directly in the main session (verbatim "Confirmed, and yes add the picture message"): the three selections above are **confirmed** as recorded, and the **picture-only PARTIAL message** is approved (F17).

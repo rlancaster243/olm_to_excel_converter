@@ -63,7 +63,7 @@ Relation to ADR-007: compatible. Raw rows claim location, not meaning, and are n
 Revisit: raw volume regularly exceeds limits, users report misreading raw output as converted data, or privacy review requires minimizing output to interpreted fields.
 
 ## ADR-009 - Structural values
-Status: product owner selected "Yes (Recommended)" 2026-10-09; mechanics PROPOSED.
+Status: product owner selected "Yes (Recommended)" 2026-10-09, confirmed directly in the main session the same day; mechanics PROPOSED.
 Decision: an adapter may declare a closed list of source values as structural (`xml:space`, root `elementCount` for contacts v1). The core checks them with validators and counts them separately; they are not exported.
 Benefit: a real export carries `xml:space` on 575,912 of 1,172,223 values (E09). Exporting them is noise and treating them as lost would make every conversion PARTIAL, which hides real loss behind a permanent warning.
 Cost: a new place for loss to hide. Controls: closed declarations with evidence, validators run by the core, per-declaration counts in the manifest, a failed check routes the value to raw or lost.
@@ -71,15 +71,16 @@ Assumption: these attributes carry no record data in contacts exports.
 Revisit: any declaration that matches a value carrying record data, or a variant where `elementCount` disagrees with the record count in an otherwise valid export.
 
 ## ADR-010 - Binary payloads as files, metadata in cells
-Status: product owner selected "Metadata + image files (Recommended)" 2026-10-09; mechanics PROPOSED.
+Status: product owner selected "Metadata + image files (Recommended)" 2026-10-09, confirmed directly in the main session the same day; mechanics PROPOSED.
 Decision: contact pictures are never written to cells or raw rows. A metadata sheet always lists them; the images are written as separate content-addressed files only when the operator opts in. Without the opt-in the pictures are `lost` (`PICTURE_NOT_EXPORTED`) and the outcome is PARTIAL.
 Benefit: no binary in cells (02 non-goals), no loss hidden, exact integrity via SHA-256, identical images stored once.
 Cost: a default conversion of an archive with pictures is PARTIAL; an extra output directory with its own lifecycle.
 Assumption: picture values are base64 text (E10, [INFERRED]; encoding unverified against a real value).
 Revisit: pictures prove not to be base64, or users want embedded images in the workbook.
+Messaging (F17): a PARTIAL caused only by unexported pictures names the count and the opt-in (`--export-images`), so a default run does not read as a failure.
 
 ## ADR-011 - Contact dates stay text
-Status: product owner selected "Keep as text (Recommended)" 2026-10-09.
+Status: product owner selected "Keep as text (Recommended)" 2026-10-09, confirmed directly in the main session the same day.
 Decision: contacts v1 writes dates exactly as exported, with no Excel date cells and no parsed columns.
 Benefit: no timezone or locale guessing (E09 does not show the date format); exact round trip.
 Cost: users sort and filter dates as text until a parsed column exists.
