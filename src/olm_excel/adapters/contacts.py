@@ -270,29 +270,42 @@ class _Session:
             return
         ctx, a = self._ctx, self._a
         key = ctx.record_key(rec.ordinal)
-        cells: list[str] = []
-        for element in SCALAR_ELEMENTS:
-            text = rec.scalars.get(element, "")
-            if utf16_len(text) > CHUNK_UTF16:
-                first, *rest = chunk_utf16(text)
-                for number, chunk in enumerate(rest, start=2):
-                    a.long_text.append((key, COLUMNS[element], str(number), chunk))
-                text = first
-            cells.append(text)
+        fit = self._fit
+        cells = [fit(key, COLUMNS[e], rec.scalars.get(e, "")) for e in SCALAR_ELEMENTS]
         a.contacts.append((
             key, ctx.member.path, str(rec.ordinal), *cells,
-            rec.primary.get(CATEGORY_ATTRS[0], ""), rec.primary.get(CATEGORY_ATTRS[1], ""), "; ".join(rec.empty),
+            fit(key, "PrimaryCategory_Name", rec.primary.get(CATEGORY_ATTRS[0], "")),
+            fit(key, "PrimaryCategory_BackgroundColor", rec.primary.get(CATEGORY_ATTRS[1], "")),
+            "; ".join(rec.empty),
         ))
         for (container, idx), attrs in rec.emails.items():
-            a.emails.append((key, container, str(idx), *(attrs.get(name, "") for name in EMAIL_ATTRS)))
+            a.emails.append((
+                key, container, str(idx),
+                *(fit(key, f"contact_emails/{container}/{idx}/{col}", attrs.get(name, ""))
+                  for name, col in zip(EMAIL_ATTRS, ("Address", "IsDefault", "Type"))),
+            ))
         for idx, attrs in rec.categories.items():
-            a.categories.append((key, str(idx), attrs.get(CATEGORY_ATTRS[0], ""), attrs.get(CATEGORY_ATTRS[1], "")))
+            a.categories.append((
+                key, str(idx),
+                fit(key, f"contact_categories/{idx}/Name", attrs.get(CATEGORY_ATTRS[0], "")),
+                fit(key, f"contact_categories/{idx}/BackgroundColor", attrs.get(CATEGORY_ATTRS[1], "")),
+            ))
         for (container, idx), text in rec.lists.items():
-            a.lists.append((key, container, str(idx), text))
+            a.lists.append((key, container, str(idx), fit(key, f"contact_lists/{container}/{idx}", text)))
         self._flush_pictures(rec, key)
         self.records_seen += 1
         ctx.end_record(key)
         self._rec = None
+
+    def _fit(self, key: str, label: str, text: str) -> str:
+        """Return the text for a cell. A value over the cell cap keeps its first chunk here and the
+        rest on `contact_long_text` (`field` names the column), so no value can fail the archive."""
+        if len(text) <= CHUNK_UTF16 // 2 or utf16_len(text) <= CHUNK_UTF16:
+            return text
+        first, *rest = chunk_utf16(text)
+        for number, chunk in enumerate(rest, start=2):
+            self._a.long_text.append((key, label, str(number), chunk))
+        return first
 
     def _flush_pictures(self, rec: _Record, key: str) -> None:
         ctx, a = self._ctx, self._a
@@ -320,7 +333,7 @@ class _Session:
             exported = ""
             if decoded is not None and a.picture_sink is not None:
                 exported = a.picture_sink.write(digest, _EXTENSIONS.get(fmt, fmt) if fmt != "unknown" else "bin", decoded)
-            a.pictures.append((key, str(number), declared, encoding, str(len(text)), size, fmt, basis, digest, exported))
+            a.pictures.append((key, str(number), self._fit(key, f"contact_pictures/{number}/type_declared", declared), encoding, str(len(text)), size, fmt, basis, digest, exported))
             if exported:
                 ctx.mapped(picture)
             else:

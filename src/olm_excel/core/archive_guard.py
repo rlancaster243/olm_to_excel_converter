@@ -10,9 +10,11 @@ segments, NUL or control characters, over-long names, duplicate names, and
 symbolic links. Resource limits (RESOURCE_LIMIT): entry count, total and
 per-member uncompressed size, per-member compression ratio.
 
-The default limits are placeholders sized from one real export (74 MB largest
-member, stored uncompressed, 4 members); they are configuration, to be set from
-measurements on larger archives (W08). Nested archives are inventoried by type
+The default limits are deliberately tight placeholders sized from one real export
+(74 MB largest member, stored uncompressed, 4 members): it is safer to reject a
+legitimate outlier, which the operator can allow explicitly (``--max-member-gib``,
+``--max-ratio``), than to spend CPU on a hostile file. They are to be set from
+measurements on larger archives (W08). There is no wall-clock parse limit yet (N03). Nested archives are inventoried by type
 and never opened.
 """
 
@@ -31,6 +33,7 @@ from typing import BinaryIO
 from olm_excel.core.errors import ConversionError, ErrorCode
 from olm_excel.core.sniff import SNIFF_BYTES, sniff_kind
 
+_READ_CAP = 1 << 20  # one read never returns more than 1 MiB
 _DRIVE = re.compile(r"^[A-Za-z]:")
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 
@@ -39,8 +42,8 @@ _CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 class ArchiveLimits:
     max_entries: int = 1_000_000
     max_total_uncompressed: int = 64 * 1024**3
-    max_member_uncompressed: int = 16 * 1024**3
-    max_ratio: float = 1000.0  # per member; stored members have ratio 1
+    max_member_uncompressed: int = 2 * 1024**3
+    max_ratio: float = 100.0  # per member; stored members have ratio 1
     max_path_length: int = 1024
 
 
@@ -97,8 +100,16 @@ class _MemberStream:
         self._left = limit
 
     def read(self, n: int = -1) -> bytes:
-        if n is None or n < 0 or n > self._left + 1:
-            n = self._left + 1
+        """Read at most 1 MiB. A short read is legal; an unbounded read of a larger member is refused.
+
+        Silently truncating ``read()`` would hand a caller that expects everything a wrong answer,
+        so it raises instead: loop with a size to consume a large member (ADR-004).
+        """
+        unbounded = n is None or n < 0
+        if unbounded:
+            n = min(_READ_CAP + 1, self._left + 1)
+        else:
+            n = min(n, _READ_CAP, self._left + 1)  # +1 detects a member that expands past its declared size
         try:
             data = self._raw.read(n)
         except (zipfile.BadZipFile, zlib.error, EOFError, NotImplementedError, RuntimeError, OSError) as exc:
@@ -106,6 +117,8 @@ class _MemberStream:
         self._left -= len(data)
         if self._left < 0:
             raise _limit("member expanded beyond its declared size")
+        if unbounded and len(data) > _READ_CAP:
+            raise _limit("unbounded read of a large member; read it in chunks")
         return data
 
     def close(self) -> None:

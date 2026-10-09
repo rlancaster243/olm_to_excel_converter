@@ -96,6 +96,7 @@ class PictureDirectory:
         self.partial = final.with_name(final.name + ".partial")
         self.files = 0
         self._made = False
+        self._committed = False
 
     def write(self, sha256: str, extension: str, data: bytes) -> str:
         if not self._made:
@@ -118,6 +119,13 @@ class PictureDirectory:
     def commit(self) -> None:
         if self._made:
             os.rename(self.partial, self.final)
+            self._committed = True
+
+    def rollback(self) -> None:
+        """Undo ``commit`` after a later failure. Safe: the directory did not exist before this run."""
+        if self._committed:
+            shutil.rmtree(self.final, ignore_errors=True)
+            self._committed = False
 
     def discard(self) -> None:
         if self._made and self.partial.exists():
@@ -282,12 +290,11 @@ def _write(archive, plan, adapters, writer, pictures, source, options, warnings,
     for row in extra:
         manifest.append(row)
 
-    def verify(path: Path) -> None:
-        verify_workbook(path, writer.sheet_rows)
-        if pictures is not None:
-            pictures.commit()
-
-    writer.publish(verify)
+    writer.publish(
+        lambda path: verify_workbook(path, writer.sheet_rows),
+        commit=pictures.commit if pictures is not None else None,
+        rollback=pictures.rollback if pictures is not None else None,
+    )
     return ConversionResult(
         outcome,
         workbook=writer.target,

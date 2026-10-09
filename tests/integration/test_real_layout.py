@@ -324,3 +324,60 @@ def test_oversized_cell_aborts_cleanly_with_an_excel_limit(tmp_path: Path) -> No
     result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": big}))
     chunks = [r for r in table_rows(wb, "raw_0001") if r["value_kind"] == "text"]
     assert result.outcome is Outcome.PARTIAL and any(int(r["chunk"]) == 3 for r in chunks)
+
+
+BIG = "é" * 20_000 + "🙂" * 10_000  # 40,000 code points, 60,000 UTF-16 units
+
+
+@pytest.mark.parametrize(
+    ("extra", "sheet", "column", "field"),
+    [
+        pytest.param(f'<OPFContactCopyChildren{SP}><string{SP}>{BIG}</string></OPFContactCopyChildren>',
+                     "contact_lists", "value", "contact_lists/OPFContactCopyChildren/1", id="list-string"),
+        pytest.param(f'<OPFContactCopyIMAddressList{SP}><contactEmailAddress{SP} OPFContactEmailAddressAddress="{BIG}"/></OPFContactCopyIMAddressList>',
+                     "contact_emails", "Address", "contact_emails/OPFContactCopyIMAddressList/1/Address", id="email-address"),
+        pytest.param(f'<OPFContactCopyCategoryList{SP}><category{SP} OPFCategoryCopyName="{BIG}" OPFCategoryCopyBackgroundColor="#000"/></OPFContactCopyCategoryList>',
+                     "contact_categories", "Name", "contact_categories/1/Name", id="category-name"),
+        pytest.param(f'<OPFContactAddPicture{SP}>{PIC}</OPFContactAddPicture><OPFContactAddPictureType{SP}>{BIG}</OPFContactAddPictureType>',
+                     "contact_pictures", "type_declared", "contact_pictures/1/type_declared", id="picture-type"),
+    ],
+)
+def test_an_oversize_non_scalar_value_is_kept_not_fatal(tmp_path: Path, extra: str, sheet: str, column: str, field: str) -> None:
+    exp = Expect()
+    xml = contacts_member(1, exp, "c.xml", start=3, picture_every=0, extra=extra)  # contact 3 has no category or IM list of its own
+    result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}), export_images=True)
+    assert result.error is None and result.outcome is not Outcome.FAILED
+    assert result.totals.raw == 0 and result.totals.lost == 0 and result.outcome is Outcome.SUCCESS
+    rows = [r for r in table_rows(wb, sheet) if r[column] and r[column].startswith("é")]
+    assert len(rows) == 1
+    chunks = {int(r["chunk"]): r["value"] for r in table_rows(wb, "contact_long_text") if r["field"] == field}
+    assert rows[0][column] + "".join(chunks[k] for k in sorted(chunks)) == BIG
+    assert len(rows[0][column].encode("utf-16-le")) // 2 <= 32_000 and min(chunks) == 2
+
+
+def test_an_oversize_category_name_is_kept_on_its_own_sidecar(tmp_path: Path) -> None:
+    xml = f'<categories elementCount="1"><category{SP} OPFCategoryCopyBackgroundColor="#111" OPFCategoryCopyName="{BIG}"/></categories>'.encode()
+    result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"Categories.xml": xml}))
+    assert result.outcome is Outcome.SUCCESS
+    (row,) = table_rows(wb, "categories")
+    (chunk,) = table_rows(wb, "categories_long_text")
+    assert row["Name"] + chunk["value"] == BIG and (chunk["field"], chunk["chunk"]) == ("Name", "2")
+
+
+def test_a_failed_workbook_rename_publishes_neither_workbook_nor_pictures_and_keeps_the_old_workbook(
+    tmp_path: Path, built, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    archive, _ = built
+    first, wb = run(tmp_path, archive)
+    old = wb.read_bytes()
+
+    import olm_excel.core.xlsx_writer as writer_module
+
+    def refuse(src, dst):
+        raise OSError("simulated rename failure")
+
+    monkeypatch.setattr(writer_module.os, "replace", refuse)
+    result, _ = run(tmp_path, archive, export_images=True, overwrite=True)
+    assert result.outcome is Outcome.FAILED and result.error.code is ErrorCode.OUTPUT_IO
+    assert sorted(p.name for p in (tmp_path / "out").iterdir()) == ["result.xlsx"]  # no pictures dir, no .partial
+    assert wb.read_bytes() == old  # the previous workbook survives a failed overwrite

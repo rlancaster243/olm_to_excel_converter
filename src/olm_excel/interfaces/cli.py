@@ -28,6 +28,8 @@ def build_parser() -> argparse.ArgumentParser:
     convert.add_argument("--no-raw-extract", action="store_true", help="do not write unmapped values as raw rows (they are reported as lost)")
     convert.add_argument("--max-raw-values", type=int, default=None, help="cap on raw rows per archive")
     convert.add_argument("--overwrite", action="store_true", help="replace an existing workbook of the same name")
+    convert.add_argument("--max-member-gib", type=float, default=None, help="allow archive members up to this many GiB uncompressed (default 2)")
+    convert.add_argument("--max-ratio", type=float, default=None, help="allow a compression ratio up to this per member (default 100)")
     convert.add_argument("--debug", action="store_true", help="show a traceback if something unexpected fails")
     profile = sub.add_parser(
         "profile",
@@ -108,10 +110,19 @@ def _summary(name: str, result) -> list[str]:
 
 
 def _run_convert(args: argparse.Namespace) -> int:
+    from dataclasses import replace
+
+    from olm_excel.core.archive_guard import ArchiveLimits
     from olm_excel.core.convert import ConvertOptions, convert_archive
     from olm_excel.core.raw_extract import DEFAULT_MAX_VALUES
 
+    limits = ArchiveLimits()
+    if args.max_member_gib is not None:
+        limits = replace(limits, max_member_uncompressed=int(args.max_member_gib * 1024**3))
+    if args.max_ratio is not None:
+        limits = replace(limits, max_ratio=args.max_ratio)
     options = ConvertOptions(
+        limits=limits,
         raw_extract=not args.no_raw_extract,
         export_images=args.export_images,
         overwrite=args.overwrite,

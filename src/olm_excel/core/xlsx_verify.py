@@ -52,13 +52,19 @@ def verify_workbook(path: Path, expected_rows: Mapping[str, int]) -> None:
                 raise _fail("sheet names differ from the expected set")
             for name, part in parts.items():
                 rows = 0
+                sheet_data = None
                 with archive.open(part) as fh:
-                    for _, el in SafeET.iterparse(fh):
+                    for event, el in SafeET.iterparse(fh, events=("start", "end")):
+                        if event == "start":
+                            if el.tag == f"{_MAIN}sheetData":
+                                sheet_data = el
+                            continue
                         if el.tag == f"{_MAIN}f":
                             raise _fail(f"formula cell found in sheet {name!r}")
                         if el.tag == f"{_MAIN}row":
                             rows += 1
                             el.clear()
+                            sheet_data.remove(el)  # clear() alone leaves an empty element per row attached
                 if rows != expected_rows[name]:
                     raise _fail(f"sheet {name!r} has {rows} rows, expected {expected_rows[name]}")
     except (zipfile.BadZipFile, KeyError, OSError) as exc:

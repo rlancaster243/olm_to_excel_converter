@@ -103,7 +103,7 @@ def test_members_open_as_bounded_streams_and_sniff_by_content(tmp_path: Path) ->
         kinds = {m.path: archive.sniff(m) for m in archive.inventory.members}
         assert kinds == {"data.dat": "xml", "pic.xml": "binary", "n.zip": "zip", "e": "empty"}  # names are never trusted
         with archive.open_member(archive.inventory.members[0]) as stream:
-            assert stream.read() == b"<?xml version='1.0'?><r/>"
+            assert stream.read(1024) == b"<?xml version='1.0'?><r/>"
 
 
 def test_corrupt_member_data_is_a_classified_error_not_a_crash(tmp_path: Path) -> None:
@@ -140,3 +140,29 @@ def test_the_guard_never_writes_next_to_the_input(tmp_path: Path) -> None:
             with archive.open_member(m) as stream:
                 stream.read()
     assert sorted(p.name for p in tmp_path.iterdir()) == before
+
+
+def test_reads_are_capped_and_an_unbounded_read_of_a_large_member_is_refused(tmp_path: Path) -> None:
+    big = b"<r>" + b"x" * (3 << 20) + b"</r>"
+    path = make_zip(tmp_path, {"big.xml": big, "small.xml": b"<r/>"}, method=zipfile.ZIP_STORED)
+    with SafeArchive.open(path) as archive:
+        big_member, small_member = archive.inventory.members
+        with archive.open_member(big_member) as stream:
+            assert len(stream.read(10 << 20)) == 1 << 20  # a huge size request is a legal short read
+            assert len(stream.read(100)) == 100
+        with archive.open_member(big_member) as stream, pytest.raises(ConversionError) as exc:
+            stream.read()  # would otherwise load the whole member; truncating silently would be worse
+        assert exc.value.code is ErrorCode.RESOURCE_LIMIT
+        with archive.open_member(small_member) as stream:
+            assert stream.read() == b"<r/>"
+        with archive.open_member(big_member) as stream:  # looping with a size reads everything
+            total = 0
+            while chunk := stream.read(64 * 1024):
+                total += len(chunk)
+            assert total == len(big)
+
+
+def test_default_limits_are_deliberately_tight_and_overridable() -> None:
+    limits = ArchiveLimits()
+    assert limits.max_member_uncompressed == 2 * 1024**3 and limits.max_ratio == 100.0
+    assert ArchiveLimits(max_member_uncompressed=16 * 1024**3, max_ratio=1000).max_ratio == 1000

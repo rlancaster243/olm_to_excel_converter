@@ -160,8 +160,19 @@ class WorkbookWriter:
         self._names.add(name.lower())
         return self._workbook.add_worksheet(name)
 
-    def publish(self, verify: Callable[[Path], None] | None = None) -> Path:
-        """Close the workbook, optionally verify the closed file, then atomically move it to ``target``."""
+    def publish(
+        self,
+        verify: Callable[[Path], None] | None = None,
+        *,
+        commit: Callable[[], None] | None = None,
+        rollback: Callable[[], None] | None = None,
+    ) -> Path:
+        """Close the workbook, verify it, then move it to ``target``.
+
+        ``commit`` publishes companion files (for example picture files) just before the workbook
+        rename; ``rollback`` undoes it if the rename fails, so the pair is published together or not
+        at all, and an existing workbook is never destroyed by a failed run.
+        """
         try:
             self._workbook.close()
         except Exception as exc:
@@ -174,7 +185,19 @@ class WorkbookWriter:
             except BaseException:
                 self.partial.unlink(missing_ok=True)
                 raise
-        os.replace(self.partial, self.target)
+        committed = False
+        try:
+            if commit is not None:
+                commit()
+                committed = True
+            os.replace(self.partial, self.target)
+        except BaseException as exc:
+            self.partial.unlink(missing_ok=True)
+            if committed and rollback is not None:
+                rollback()
+            if isinstance(exc, OSError):
+                raise ConversionError(ErrorCode.OUTPUT_IO, f"could not publish the workbook: {type(exc).__name__}", scope="workbook") from exc
+            raise
         return self.target
 
     def abort(self) -> None:
