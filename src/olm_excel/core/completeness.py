@@ -111,15 +111,79 @@ def totals(accounts: Iterable[MemberAccount]) -> Totals:
     )
 
 
-def manifest_rows(outcome: Outcome, accounts: Iterable[MemberAccount], *, raw_extract: bool) -> list[tuple[str, str]]:
+def outcome_notice(
+    outcome: Outcome,
+    accounts: Iterable[MemberAccount],
+    *,
+    unclaimed_non_xml_members: int = 0,
+    warning_codes: Iterable[str] = (),
+    images_exported: bool = False,
+) -> str:
+    """One sentence explaining the outcome, shared by `_manifest` and the CLI (02 decided choices).
+
+    When the only reason for PARTIAL is contact pictures that image export would
+    have written, say so and name the fix. Otherwise list every reason, and never
+    suggest that image export alone would give SUCCESS.
+    """
+    if outcome is Outcome.SUCCESS:
+        return "Fully converted."
+    accounts = list(accounts)
+    t = totals(accounts)
+    lost: Counter[ErrorCode] = Counter()
+    for a in accounts:
+        lost.update(a.lost)
+    pictures = lost.get(ErrorCode.PICTURE_NOT_EXPORTED, 0)
+    warnings = sorted(set(warning_codes))
+    picture_only = (
+        outcome is Outcome.PARTIAL
+        and pictures > 0
+        and set(lost) == {ErrorCode.PICTURE_NOT_EXPORTED}
+        and t.raw == 0
+        and t.uncounted_members == 0
+        and unclaimed_non_xml_members == 0
+        and not warnings
+    )
+    if picture_only and not images_exported:
+        return (
+            f"PARTIAL only because {pictures} contact pictures were not exported. "
+            "Re-run with image export (--export-images) to include them."
+        )
+
+    reasons: list[str] = []
+    if pictures:
+        reasons.append(
+            f"{pictures} contact pictures could not be decoded, so were not exported"
+            if images_exported
+            else f"{pictures} contact pictures were not exported (image export is off)"
+        )
+    for reason, n in sorted(lost.items()):
+        if reason is not ErrorCode.PICTURE_NOT_EXPORTED:
+            reasons.append(f"{n} values lost ({reason})")
+    if t.raw:
+        reasons.append(f"{t.raw} values kept as raw rows")
+    if t.uncounted_members:
+        reasons.append(f"{t.uncounted_members} members not fully read")
+    if unclaimed_non_xml_members:
+        reasons.append(f"{unclaimed_non_xml_members} non-XML members not converted")
+    if warnings:
+        reasons.append("warnings: " + ", ".join(warnings))
+    detail = "; ".join(reasons) if reasons else "no family was converted"
+    return f"NOT FULLY CONVERTED ({outcome.value}): {detail}. Check the counts below before relying on this file."
+
+
+def manifest_rows(
+    outcome: Outcome,
+    accounts: Iterable[MemberAccount],
+    *,
+    raw_extract: bool,
+    notice: str | None = None,
+) -> list[tuple[str, str]]:
     """Leading `_manifest` rows: outcome and counts first, so a PARTIAL or
     UNSUPPORTED download never reads as a full conversion (02 decision)."""
+    accounts = list(accounts)
     t = totals(accounts)
-    notice = (
-        "Fully converted."
-        if outcome is Outcome.SUCCESS
-        else "NOT FULLY CONVERTED. Raw and lost values are listed; check the counts below before relying on this file."
-    )
+    if notice is None:
+        notice = outcome_notice(outcome, accounts)
     return [
         ("outcome", outcome.value),
         ("notice", notice),

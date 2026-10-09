@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from olm_excel.core.completeness import MemberAccount, Outcome, decide_outcome, manifest_rows
+from olm_excel.core.completeness import MemberAccount, Outcome, decide_outcome, manifest_rows, outcome_notice
 from olm_excel.core.errors import ConversionError, ErrorCode
 
 
@@ -70,3 +70,51 @@ def test_manifest_leads_with_outcome_notice_and_counts() -> None:
     assert rows[0] == ("outcome", "PARTIAL")
     assert rows[1][1].startswith("NOT FULLY CONVERTED")
     assert dict(rows)["lost"] == "1"
+
+
+def picture_account(pictures: int = 3, raw: int = 0, counted: bool = True) -> MemberAccount:
+    a = MemberAccount("c.xml", source_values=10 + pictures + raw, mapped=10, raw=raw)
+    a.add_lost(ErrorCode.PICTURE_NOT_EXPORTED, pictures)
+    if not counted:
+        a.mark_uncounted(ErrorCode.RECORD_PARSE_ERROR)
+    return a
+
+
+class TestOutcomeNotice:  # T35
+    def test_picture_only_names_the_fix(self) -> None:
+        assert outcome_notice(Outcome.PARTIAL, [picture_account()]) == (
+            "PARTIAL only because 3 contact pictures were not exported. "
+            "Re-run with image export (--export-images) to include them."
+        )
+
+    @pytest.mark.parametrize(
+        "kwargs, acct",
+        [
+            pytest.param({}, picture_account(raw=1), id="raw-values"),
+            pytest.param({}, picture_account(counted=False), id="uncounted-member"),
+            pytest.param({"unclaimed_non_xml_members": 1}, picture_account(), id="non-xml-member"),
+            pytest.param({"warning_codes": ["STRUCTURAL_MISMATCH"]}, picture_account(), id="warning"),
+        ],
+    )
+    def test_any_other_reason_removes_the_only_because_wording(self, kwargs, acct) -> None:
+        notice = outcome_notice(Outcome.PARTIAL, [acct], **kwargs)
+        assert "only because" not in notice and "--export-images" not in notice
+        assert "3 contact pictures were not exported (image export is off)" in notice
+
+    def test_other_lost_reasons_are_listed_alongside_pictures(self) -> None:
+        acct = picture_account()
+        acct.source_values += 2
+        acct.add_lost(ErrorCode.RAW_EXTRACT_DISABLED, 2)
+        notice = outcome_notice(Outcome.PARTIAL, [acct])
+        assert "only because" not in notice and "2 values lost (RAW_EXTRACT_DISABLED)" in notice
+
+    def test_export_already_on_never_advises_export(self) -> None:
+        notice = outcome_notice(Outcome.PARTIAL, [picture_account()], images_exported=True)
+        assert "only because" not in notice and "--export-images" not in notice
+        assert "3 contact pictures could not be decoded" in notice
+
+    def test_unsupported_never_uses_the_picture_only_wording(self) -> None:
+        assert "only because" not in outcome_notice(Outcome.UNSUPPORTED, [picture_account()])
+
+    def test_success_is_fully_converted(self) -> None:
+        assert outcome_notice(Outcome.SUCCESS, [account(mapped=10)]) == "Fully converted."

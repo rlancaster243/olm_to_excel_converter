@@ -104,7 +104,8 @@ def _summary(name: str, result) -> list[str]:
     if t.uncounted_members:
         lines.append(f"  members not fully counted: {t.uncounted_members}")
     if result.outcome.value != "SUCCESS":
-        lines.append("  NOT FULLY CONVERTED: see the _manifest, _members, _warnings and raw sheets before relying on this file.")
+        lines.append(f"  {result.notice or 'NOT FULLY CONVERTED.'}")
+        lines.append("  See the _manifest, _members, _warnings and raw sheets before relying on this file.")
     lines.append(f"  time: {result.seconds:.1f}s")
     return lines
 

@@ -48,5 +48,6 @@ def test_cli_convert_exit_codes_and_summary(tmp_path, capsys: pytest.CaptureFixt
     assert cli.main(["convert", str(pics), "-o", str(out), "--export-images", "--overwrite"]) == 0
     text = capsys.readouterr().out
     assert "full.olm: SUCCESS" in text and "pics.olm: PARTIAL" in text and "lost PICTURE_NOT_EXPORTED: 2" in text
-    assert "pictures: 1 files" in text and "NOT FULLY CONVERTED" in text
+    assert "pictures: 1 files" in text
+    assert "PARTIAL only because 2 contact pictures were not exported. Re-run with image export (--export-images)" in text
     assert "c.xml" not in text  # member paths are not echoed to the terminal

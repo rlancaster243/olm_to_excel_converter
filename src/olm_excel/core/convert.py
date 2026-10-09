@@ -23,7 +23,7 @@ from pathlib import Path
 from olm_excel import __version__
 from olm_excel.adapters import default_adapters
 from olm_excel.core.archive_guard import ArchiveLimits, MemberInfo, SafeArchive
-from olm_excel.core.completeness import MemberAccount, Outcome, Totals, decide_outcome, manifest_rows, totals
+from olm_excel.core.completeness import MemberAccount, Outcome, Totals, decide_outcome, manifest_rows, outcome_notice, totals
 from olm_excel.core.discovery import select_adapter, sniff_signature
 from olm_excel.core.errors import ConversionError, ErrorCode
 from olm_excel.core.member_context import MemberContext, StructuralStats, WarningLog
@@ -84,6 +84,7 @@ class ConversionResult:
     warnings_by_code: dict[str, int] = field(default_factory=dict)
     structural: dict[str, tuple[int, int]] = field(default_factory=dict)  # name -> (consumed, failed)
     pictures_written: int = 0
+    notice: str = ""
     error: ConversionError | None = None
     seconds: float = 0.0
 
@@ -270,7 +271,14 @@ def _write(archive, plan, adapters, writer, pictures, source, options, warnings,
     structural = {name: (stats.consumed[name], stats.failed[name]) for name in sorted({*stats.consumed, *stats.failed})}
     warning_totals = warnings.totals_by_code()
 
-    for row in manifest_rows(outcome, accounts, raw_extract=options.raw_extract):
+    notice = outcome_notice(
+        outcome,
+        accounts,
+        unclaimed_non_xml_members=unclaimed_non_xml,
+        warning_codes=warning_totals,
+        images_exported=options.export_images,
+    )
+    for row in manifest_rows(outcome, accounts, raw_extract=options.raw_extract, notice=notice):
         manifest.append(row)
     extra = [
         ("export_images", "on" if options.export_images else "off"),
@@ -307,6 +315,7 @@ def _write(archive, plan, adapters, writer, pictures, source, options, warnings,
         warnings_by_code=dict(warning_totals),
         structural=structural,
         pictures_written=pictures.files if pictures is not None else 0,
+        notice=notice,
     )
 
 

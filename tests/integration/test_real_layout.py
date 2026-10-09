@@ -65,7 +65,12 @@ def test_default_conversion_reconciles_and_is_partial_only_because_pictures_are_
     assert "raw_0001" not in sheet_names(wb)  # clean conversion: no raw sheets
 
     m = manifest(wb)
-    assert m["outcome"] == "PARTIAL" and m["notice"].startswith("NOT FULLY CONVERTED")
+    assert m["outcome"] == "PARTIAL"
+    assert m["notice"] == (
+        f"PARTIAL only because {exp.pictures} contact pictures were not exported. "
+        "Re-run with image export (--export-images) to include them."
+    )
+    assert result.notice == m["notice"]
     assert (m["structural"], m["raw"], m["lost"]) == (str(structural), "0", str(exp.pictures))
     assert m["lost:PICTURE_NOT_EXPORTED"] == str(exp.pictures)
     assert m["adapter:contacts-olm-v1"] == "1.0.0" and m["adapter:categories-olm-v1"] == "1.0.0"
@@ -381,3 +386,45 @@ def test_a_failed_workbook_rename_publishes_neither_workbook_nor_pictures_and_ke
     assert result.outcome is Outcome.FAILED and result.error.code is ErrorCode.OUTPUT_IO
     assert sorted(p.name for p in (tmp_path / "out").iterdir()) == ["result.xlsx"]  # no pictures dir, no .partial
     assert wb.read_bytes() == old  # the previous workbook survives a failed overwrite
+
+
+def test_picture_message_lists_pictures_as_one_reason_among_others(tmp_path: Path) -> None:  # T35
+    exp = Expect()
+    extra = f"<OPFContactCopyPronouns{SP}>x</OPFContactCopyPronouns>"
+    xml = contacts_member(4, exp, "c.xml", picture_every=2, extra=extra)
+    result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}))
+    notice = manifest(wb)["notice"]
+    assert result.outcome is Outcome.PARTIAL and result.totals.raw > 0 and exp.pictures == 2
+    assert "only because" not in notice and "--export-images" not in notice
+    assert notice.startswith("NOT FULLY CONVERTED (PARTIAL): ")
+    assert "2 contact pictures were not exported (image export is off)" in notice
+    assert f"{result.totals.raw} values kept as raw rows" in notice
+    assert result.notice == notice
+
+
+def test_no_picture_message_once_images_are_exported(tmp_path: Path, built) -> None:  # T35
+    archive, _ = built
+    result, wb = run(tmp_path, archive, export_images=True)
+    assert result.outcome is Outcome.SUCCESS
+    assert manifest(wb)["notice"] == result.notice == "Fully converted."
+
+
+def test_undecodable_pictures_with_export_on_never_advise_export(tmp_path: Path) -> None:  # T35
+    exp = Expect()
+    extra = f"<OPFContactAddPicture{SP}>this is not base64 !!</OPFContactAddPicture>"
+    xml = contacts_member(1, exp, "c.xml", picture_every=0, extra=extra)
+    result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}), export_images=True)
+    notice = manifest(wb)["notice"]
+    assert result.outcome is Outcome.PARTIAL and result.lost_by_reason == {"PICTURE_NOT_EXPORTED": 1}
+    assert "only because" not in notice and "--export-images" not in notice
+    assert "1 contact pictures could not be decoded, so were not exported" in notice
+
+
+def test_cli_prints_the_picture_only_message(tmp_path: Path, built, capsys: pytest.CaptureFixture[str]) -> None:  # T35
+    from olm_excel.interfaces import cli
+
+    archive, exp = built
+    code = cli.main(["convert", str(archive), "-o", str(tmp_path / "cli-out")])
+    out = capsys.readouterr().out
+    assert code == 3
+    assert f"PARTIAL only because {exp.pictures} contact pictures were not exported." in out
