@@ -28,3 +28,15 @@ The full suite takes about a minute; most of that is one test that writes and re
 - `tests/unit/test_walker.py`: the streaming walker matches a whole-document reference on randomized mixed content.
 
 Never commit `.olm` files other than the synthetic sample; `.gitignore` blocks them.
+
+## Profiling a real archive without sharing its contents
+
+`olm-excel profile` writes a structure-only JSON report: member counts, sizes and types, and for XML members the element and attribute names with counts. It never writes text or attribute values. Folder names are replaced by hashes using a random per-run salt, file names collapse to `~file.ext`, and only generic Outlook names (e.g. `Address Book`, `Sent Items`) stay readable.
+
+Run it on the machine that holds the archive, then read the report before sharing it:
+
+```bash
+.venv/bin/olm-excel profile "/path/to/Outlook for Mac Archive.olm" -o olm-profile.json
+```
+
+`--show-names` keeps real folder and file names; leave it off unless you are sure they are not personal.
