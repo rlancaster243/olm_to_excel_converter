@@ -321,6 +321,67 @@ def test_pictures_that_do_not_decode_or_do_not_pair_are_reported_not_guessed(tmp
     assert result.outcome is outcome
 
 
+def test_a_contact_image_holding_a_picture_is_a_picture_and_never_cell_text(tmp_path: Path) -> None:  # E12, F16
+    exp = Expect()
+    xml = contacts_member(1, exp, "c.xml", picture_every=0, contact_image=PIC)
+    result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}))
+    (contact,) = table_rows(wb, "contacts")
+    assert contact["ContactImage"] == ""
+    (picture,) = table_rows(wb, "contact_pictures")
+    assert (picture["source_element"], picture["encoding"], picture["detected_format"], picture["type_declared"]) == (
+        "OPFContactCopyContactImage", "base64", "png", ""
+    )
+    assert picture["sha256"] == hashlib.sha256(PNG_1X1).hexdigest() and picture["exported_file"] == ""
+    assert result.outcome is Outcome.PARTIAL and result.lost_by_reason == {"PICTURE_NOT_EXPORTED": 1}
+    t = result.totals
+    assert t.source_values == t.mapped + t.structural + t.raw + t.lost and t.raw == 0
+    book = openpyxl.load_workbook(wb, read_only=True)
+    for sheet in book.worksheets:
+        for row in sheet.iter_rows(values_only=True):
+            assert not any(isinstance(v, str) and PIC in v for v in row), sheet.title
+
+
+def test_a_contact_image_picture_is_exported_when_image_export_is_on(tmp_path: Path) -> None:  # E12
+    exp = Expect()
+    xml = contacts_member(1, exp, "c.xml", picture_every=0, contact_image=PIC)
+    result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}), export_images=True)
+    assert result.outcome is Outcome.SUCCESS and result.totals.lost == 0
+    digest = hashlib.sha256(PNG_1X1).hexdigest()
+    (picture,) = table_rows(wb, "contact_pictures")
+    assert (picture["source_element"], picture["sha256"], picture["exported_file"]) == (
+        "OPFContactCopyContactImage", digest, f"result-pictures/{digest[:16]}.png"
+    )
+    assert (tmp_path / "out" / "result-pictures" / f"{digest[:16]}.png").read_bytes() == PNG_1X1
+    assert table_rows(wb, "contacts")[0]["ContactImage"] == ""
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["0", base64.b64encode(b"just some text, not an image").decode()],
+    ids=["short-flag", "base64-that-is-not-an-image"],
+)
+def test_a_contact_image_that_is_not_a_picture_stays_in_its_cell(tmp_path: Path, value: str) -> None:  # E12
+    exp = Expect()
+    xml = contacts_member(1, exp, "c.xml", picture_every=0, contact_image=value)
+    result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}))
+    assert table_rows(wb, "contacts")[0]["ContactImage"] == value
+    assert table_rows(wb, "contact_pictures") == []
+    assert result.outcome is Outcome.SUCCESS and result.totals.lost == 0
+
+
+def test_a_contact_image_picture_does_not_change_the_add_picture_pairing(tmp_path: Path) -> None:  # E12
+    exp = Expect()
+    extra = f"<OPFContactAddPicture{SP}>{PIC}</OPFContactAddPicture><OPFContactAddPictureType{SP}>image/png</OPFContactAddPictureType>"
+    xml = contacts_member(1, exp, "c.xml", picture_every=0, extra=extra, contact_image=PIC)
+    result, wb = run(tmp_path, write_zip(tmp_path / "a.olm", {"c.xml": xml}), export_images=True)
+    rows = table_rows(wb, "contact_pictures")
+    assert [(r["picture_ordinal"], r["source_element"], r["type_declared"], r["detected_format"]) for r in rows] == [
+        ("1", "OPFContactAddPicture", "image/png", "png"),
+        ("2", "OPFContactCopyContactImage", "", "png"),
+    ]
+    assert result.outcome is Outcome.SUCCESS
+
+
 def test_contacts_are_claimed_by_content_not_by_name_or_path(tmp_path: Path) -> None:  # T34
     exp = Expect()
     good = contacts_member(2, exp, "weird/x.dat", picture_every=0)

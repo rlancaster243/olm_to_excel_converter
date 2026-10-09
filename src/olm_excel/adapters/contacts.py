@@ -46,6 +46,8 @@ SCALAR_ELEMENTS: tuple[str, ...] = (
 )
 PICTURE = "OPFContactAddPicture"
 PICTURE_TYPE = "OPFContactAddPictureType"
+# Unknown content (E12). Its text is a plain cell unless it decodes as an image, then it is a picture (see feed).
+CONTACT_IMAGE = "OPFContactCopyContactImage"
 EMAIL_CONTAINERS: tuple[str, ...] = (
     "OPFContactCopyEmailAddressList", "OPFContactCopyEmailAddressList1", "OPFContactCopyEmailAddressList2",
     "OPFContactCopyDefaultEmailAddress", "OPFContactCopyIMAddressList", "OPFContactCopyDefaultIMAddress",
@@ -79,7 +81,7 @@ CATEGORIES_HEADER = ("record_key", "ordinal", "Name", "BackgroundColor")
 LISTS_HEADER = ("record_key", "list_source", "ordinal", "value")
 PICTURES_HEADER = (
     "record_key", "picture_ordinal", "type_declared", "encoding", "size_chars", "decoded_bytes",
-    "detected_format", "hash_basis", "sha256", "exported_file",
+    "detected_format", "hash_basis", "sha256", "exported_file", "source_element",
 )
 LONG_TEXT_HEADER = ("record_key", "field", "chunk", "value")
 
@@ -90,6 +92,16 @@ _WHITESPACE = re.compile(r"\s+")
 class PictureSink(Protocol):
     def write(self, sha256: str, extension: str, data: bytes) -> str:
         """Store one image and return the path to record in `exported_file`."""
+
+
+def decode_payload(text: str, max_bytes: int) -> bytes | None:
+    """Strict base64 decode of a picture element's text. None if it is not base64 or is over the size cap."""
+    if len(text) > max_bytes * 4 // 3 + 8:
+        return None
+    try:
+        return base64.b64decode(_WHITESPACE.sub("", text), validate=True) or None
+    except (binascii.Error, ValueError):
+        return None
 
 
 def detect_image_format(data: bytes) -> str:
@@ -125,6 +137,7 @@ class _Record:
     lists: dict[tuple[str, int], str] = field(default_factory=dict)
     pictures: list[SourceValue] = field(default_factory=list)
     picture_types: list[SourceValue] = field(default_factory=list)
+    image_fields: list[tuple[SourceValue, bytes]] = field(default_factory=list)  # OPFContactCopyContactImage images
 
 
 class ContactsAdapter:
@@ -237,6 +250,11 @@ class _Session:
                 return
             if idx == 1 and not attribute and (kind is ValueKind.EMPTY or value.text_position == 0):
                 if tag in COLUMNS:
+                    if tag == CONTACT_IMAGE and kind is ValueKind.TEXT:
+                        payload = decode_payload(value.value, self._a.max_picture_bytes)
+                        if payload is not None and detect_image_format(payload) != "unknown":
+                            rec.image_fields.append((value, payload))  # a picture, not cell text: no image bytes in cells
+                            return
                     rec.scalars[tag] = value.value
                     if kind is ValueKind.EMPTY:
                         rec.present.add(tag)
@@ -320,14 +338,12 @@ class _Session:
         else:
             for stray in rec.picture_types:
                 ctx.unknown(stray, key)
-        for number, picture in enumerate(rec.pictures, start=1):
+        # Each entry: (source element, value, decoded bytes or None, declared type). A ContactImage picture was
+        # decoded and recognised as an image at feed time, and never pairs with OPFContactAddPictureType.
+        items = [(PICTURE, p, decode_payload(p.value, a.max_picture_bytes), declared) for p in rec.pictures]
+        items += [(CONTACT_IMAGE, p, payload, "") for p, payload in rec.image_fields]
+        for number, (element, picture, decoded, type_declared) in enumerate(items, start=1):
             text = picture.value
-            decoded: bytes | None = None
-            if len(text) <= self._a.max_picture_bytes * 4 // 3 + 8:
-                try:
-                    decoded = base64.b64decode(_WHITESPACE.sub("", text), validate=True) or None
-                except (binascii.Error, ValueError):
-                    decoded = None
             if decoded is not None:
                 encoding, fmt, basis = "base64", detect_image_format(decoded), "decoded_bytes"
                 digest, size = hashlib.sha256(decoded).hexdigest(), str(len(decoded))
@@ -337,7 +353,10 @@ class _Session:
             exported = ""
             if decoded is not None and a.picture_sink is not None:
                 exported = a.picture_sink.write(digest, _EXTENSIONS.get(fmt, fmt) if fmt != "unknown" else "bin", decoded)
-            a.pictures.append((key, str(number), self._fit(key, f"contact_pictures/{number}/type_declared", declared), encoding, str(len(text)), size, fmt, basis, digest, exported))
+            a.pictures.append((
+                key, str(number), self._fit(key, f"contact_pictures/{number}/type_declared", type_declared), encoding,
+                str(len(text)), size, fmt, basis, digest, exported, element,
+            ))
             if exported:
                 ctx.mapped(picture)
             else:

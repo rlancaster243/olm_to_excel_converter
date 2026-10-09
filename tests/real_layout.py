@@ -55,7 +55,7 @@ def _el(tag: str, text: str | None = None, attrs: str = "") -> str:
     return f"<{tag}{SP}{attrs}>{inner}</{tag}>"
 
 
-def contact_xml(i: int, exp: Expect, *, with_picture: bool, long_note: bool, extra: str = "") -> str:
+def contact_xml(i: int, exp: Expect, *, with_picture: bool, long_note: bool, extra: str = "", contact_image: str | None = None) -> str:
     parts = [
         _el("OPFContactCanDelete", "1"), _el("OPFContactCanEdit", "1"),
         _el("OPFContactCopyDisplayName", f"Person {i}"), _el("OPFContactCopyFirstName", f"First{i}"),
@@ -64,7 +64,7 @@ def contact_xml(i: int, exp: Expect, *, with_picture: bool, long_note: bool, ext
         _el("OPFContactCopyNotesPlain", LONG_NOTE if long_note else f"note {i}, with \"quotes\" & commas"),
         _el("OPFContactExchangeID", f"EX{i:08d}"), _el("OPFContactGetFlagStatus", "0"),
         _el("OPFContactIsJapaneseContact", "0"), _el("OPFContactType", "0"),
-        _el("OPFContactCopyContactImage", f"img-{i}"),
+        _el("OPFContactCopyContactImage", f"img-{i}" if contact_image is None else contact_image),
     ]
     exp.structural += 14  # 13 field elements above + the contact element itself
     exp.long_text_values += int(long_note)
@@ -118,9 +118,10 @@ def contact_xml(i: int, exp: Expect, *, with_picture: bool, long_note: bool, ext
 
 
 def contacts_member(count: int, exp: Expect, path: str, *, start: int = 1, picture_every: int = 4, long_note_at: int | None = None,
-                    element_count: str | None = None, root_extra: str = "", extra: str = "") -> bytes:
+                    element_count: str | None = None, root_extra: str = "", extra: str = "", contact_image: str | None = None) -> bytes:
     body = "".join(
-        contact_xml(i, exp, with_picture=(picture_every and i % picture_every == 0), long_note=(i == long_note_at), extra=extra)
+        contact_xml(i, exp, with_picture=(picture_every and i % picture_every == 0), long_note=(i == long_note_at), extra=extra,
+                    contact_image=contact_image)
         for i in range(start, start + count)
     )
     exp.contacts[path] = count
