@@ -34,8 +34,8 @@ Golden expected outputs are independently derived from real Outlook sample inspe
 | T14 | no-network run, logging | zero outbound content transmission, no PII in logs |
 | T15 | no contacts but valid other-family archive | no false “empty success”; family coverage explicit |
 | T16 | schema mutation fuzzing | no uncaught unsafe failure; diagnostics preserve coverage state |
-| T17 | known family with a renamed child element (e.g. `emailAddress` → `contactEmailAddress`) | whether or not the adapter is selected: mapped + raw + lost == source values; the email attribute values appear as mapped or raw, never silently absent; outcome not SUCCESS |
-| T18 | known family with an added root namespace | whether the probe matches namespace-aware (all mapped, SUCCESS allowed) or not (UNSUPPORTED, all raw): mapped + raw + lost == source values; namespace declaration not counted |
+| T17 | known family with a renamed child element (e.g. `emailAddress` → `contactEmailAddress`) | whether or not the adapter is selected: mapped + structural + raw + lost == source values; the email attribute values appear as mapped or raw, never silently absent; outcome not SUCCESS |
+| T18 | known family with an added root namespace | whether the probe matches namespace-aware (all mapped, SUCCESS allowed) or not (UNSUPPORTED, all raw): mapped + structural + raw + lost == source values; namespace declaration not counted |
 | T19 | node-dense member exceeding `raw_extract_max_values`, followed by further unclaimed members | RAW_EXTRACT_LIMIT, `raw_complete=false` on the cut member, every later member indexed with stop reason, no silent truncation, non-SUCCESS outcome |
 | T20 | raw extract opt-out on an archive with unclaimed members | no raw rows; unmapped values counted lost with RAW_EXTRACT_DISABLED; outcome identical to the opt-in run |
 | T21 | malformed XML in an unclaimed member | rows before the error retained, `raw_complete=false`, RECORD_PARSE_ERROR, member uncounted beyond the error |

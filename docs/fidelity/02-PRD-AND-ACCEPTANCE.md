@@ -29,7 +29,7 @@ G7 Archives with unrecognized schemas still deliver their readable values, as a 
 | F10 | Give actionable outcome states: SUCCESS / PARTIAL / FAILED / UNSUPPORTED / CANCELLED | Matrix of all outcomes |
 | F11 | Allow cancellation within bounded processing checkpoints | Cancel produces no falsely completed workbook |
 | F12 | Make runs reproducible against identical input/config/adapter versions | Deterministic logical outputs and recorded tool versions |
-| F13 | By default, write every readable value from unclaimed XML members and unknown fields to raw extract sheets (04 Raw extract contract) | Schema-variant fixtures: mapped + raw + lost equals source values; outcome never SUCCESS when raw > 0; opt-out recorded in manifest |
+| F13 | By default, write every readable value from unclaimed XML members and unknown fields to raw extract sheets (04 Raw extract contract) | Schema-variant fixtures: mapped + structural + raw + lost equals source values; outcome never SUCCESS when raw > 0; opt-out recorded in manifest |
 | F14 | Account for every source value as mapped, structural, raw or lost, per member and family (04 field-level completeness rule) | Manifest counts reconcile on every fixture; any raw or lost value prevents SUCCESS |
 | F15 | Check declared structural values (for example `xml:space`, root `elementCount`) and report them as a separate count; a failed check is never structural | Structural fixtures T26-T28: counts reconcile; mismatch gives PARTIAL and a warning |
 | F16 | Contact pictures: metadata sheet always; image files only on opt-in export; never binary in cells | T31: metadata row per picture, content-addressed files on export, `PICTURE_NOT_EXPORTED` otherwise |
