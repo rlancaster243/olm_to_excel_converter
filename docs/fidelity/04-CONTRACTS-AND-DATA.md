@@ -22,6 +22,7 @@ A source value is the unit of field-level completeness, shared by adapters, the 
 - a text node (element text, or text following a child element) that contains non-whitespace, or that is whitespace-only inside an element with no child elements, or anywhere under `xml:space="preserve"`; whitespace-only text between child elements is formatting and not a value;
 - an empty element: no attributes, no children and no text at all (`value_kind=empty`, so absent and empty stay distinguishable).
 An element with attributes but no content yields only its attribute values. Each source value has a `node_ordinal` in document order within its member, assigned by the core walker.
+Known unobserved risk: newline and indent text between fields under `xml:space="preserve"` is a text value by the rule above. It is counted and kept raw (outcome PARTIAL) until an export shows it. Treating it as structural would need evidence and an ADR (ADR-009).
 
 ## Structural values (ADR-009)
 Some source values are format bookkeeping, not record data. An adapter may declare a closed list of structural declarations in its registry entry. Each declaration names an element path pattern and attribute, a validator, and the evidence that justified it. The core, not the adapter, evaluates declarations and counts the values.
