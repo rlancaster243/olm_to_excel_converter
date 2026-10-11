@@ -710,3 +710,5 @@ def test_refused_member_is_ledgered_not_silent(tmp_path: Path) -> None:  # findi
     assert len(table_rows(wb, "_warnings")) >= 1
     member_rows = {r["path"]: r for r in table_rows(wb, "_members")}
     assert member_rows["bad.xml"]["counted"] == "false"
+    manifest = {r["key"]: r["value"] for r in table_rows(wb, "_manifest")}
+    assert "bad.xml:" in manifest.get("refused_members", "")

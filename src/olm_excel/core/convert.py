@@ -53,8 +53,7 @@ _UNSUPPORTED_REASONS = {
 
 @dataclass(frozen=True)
 class ConvertOptions:
-    # ADR-008 PROPOSED: raw_extract default-on, max_raw_values cap and raw_NNNN
-    # layout are explicit options pending architecture review, not decided by merging.
+    # ADR-008 (accepted 2026-10-11): default-on raw extract, 5M cap, raw_NNNN partitions.
     raw_extract: bool = True
     export_images: bool = False
     overwrite: bool = False
@@ -188,6 +187,7 @@ class _Planned:
     member: MemberInfo
     kind: str
     adapter: object | None
+    fingerprint_refused: ErrorCode | None = None
 
 
 def _plan(archive: SafeArchive, adapters: list, warnings: WarningLog) -> list[_Planned]:
@@ -195,6 +195,7 @@ def _plan(archive: SafeArchive, adapters: list, warnings: WarningLog) -> list[_P
     for member in archive.inventory.members:
         kind = archive.sniff(member)
         adapter = None
+        fingerprint_refused: ErrorCode | None = None
         if kind in _XML_KINDS:
             try:
                 with archive.open_member(member) as stream:
@@ -204,12 +205,13 @@ def _plan(archive: SafeArchive, adapters: list, warnings: WarningLog) -> list[_P
                 # Ledger at member grain now; _write adds the outcome-level warning
                 # from the walk error as well, so _warnings is never empty.
                 signature = None
+                fingerprint_refused = exc.code
                 warnings.add(member.path, exc.code, f"member could not be fingerprinted: {exc.code.value}")
             if signature is not None:
                 adapter, results = select_adapter(signature, adapters)
                 if adapter is None and sum(r.confident for r in results) > 1:
                     warnings.add(member.path, ErrorCode.AMBIGUOUS_ADAPTER, "more than one adapter matched; none was used")
-        plan.append(_Planned(member, kind, adapter))
+        plan.append(_Planned(member, kind, adapter, fingerprint_refused))
     return plan
 
 
@@ -302,7 +304,18 @@ def _write(archive, plan, adapters, writer, pictures, source, options, warnings,
         warning_codes=warning_totals,
         images_exported=options.export_images,
     )
-    for row in manifest_rows(outcome, accounts, raw_extract=options.raw_extract, notice=notice):
+    refused = [
+        (p.member.path, p.fingerprint_refused.value)
+        for p in plan
+        if p.fingerprint_refused is not None
+    ]
+    for row in manifest_rows(
+        outcome,
+        accounts,
+        raw_extract=options.raw_extract,
+        notice=notice,
+        refused_members=refused,
+    ):
         manifest.append(row)
     extra = [
         ("export_images", "on" if options.export_images else "off"),

@@ -1,6 +1,6 @@
 # 02 — Product Contract / PRD
 
-Status: PROPOSED, pending scope and product acceptance.
+Status: **Accepted** for contacts v1 vertical slice and standalone repo boundary (ADR-001, Russell 2026-10-11). Broader record families remain TARGET per phases P1–P4.
 
 ## Users and jobs
 Primary: person migrating or analyzing Outlook data with Excel. Secondary: technical operator running repeatable batch conversion. Primary job: select 1..N OLM archives, understand coverage, obtain usable Excel files without manual format debugging.
@@ -71,7 +71,8 @@ A success state must never be inferred merely from “XLSX created.”
 
 ## Decided acceptance choices
 - 2026-10-09, product owner: PARTIAL and UNSUPPORTED results with a verified workbook are **downloadable**, so their output can be assessed. Before download and inside the workbook, the UI and `_manifest` must state that the result is not fully converted, with the outcome state and the mapped/raw/lost counts. A PARTIAL or UNSUPPORTED download is never presented like a SUCCESS. FAILED and CANCELLED results publish no workbook.
-- 2026-10-09, product owner: raw extract for unrecognized schemas is **default-on** (F13, ADR-008). Contract mechanics in 04 remain PROPOSED pending architecture review.
+- 2026-10-09, product owner: raw extract for unrecognized schemas is **default-on** (F13, ADR-008).
+- 2026-10-11, Russell: ADR-008 mechanics **accepted** (5M `max_raw_values` cap, `raw_NNNN` partitions, manifest flags). Standalone repo **accepted** with parent integration contract (ADR-001). ADR-009–011 **confirmed**.
 - 2026-10-09, product owner: **structural values**. `xml:space` and the root `elementCount` are declared structural: checked, not exported, counted separately (F15, ADR-009). Recorded from the product owner's verbatim selection "Yes (Recommended)", relayed through a second Claude session; please correct here if it was misrecorded.
 - 2026-10-09, product owner: **contact pictures**. Metadata sheet plus optional export of the images as separate files (F16, ADR-010). Verbatim selection "Metadata + image files (Recommended)", relayed the same way.
 - 2026-10-09, product owner: **dates**. Contacts v1 keeps dates as exact text (ADR-011). Verbatim selection "Keep as text (Recommended)", relayed the same way.

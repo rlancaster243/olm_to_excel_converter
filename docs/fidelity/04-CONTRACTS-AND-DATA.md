@@ -2,7 +2,7 @@
 
 ## External intake
 `convert_many(inputs: Sequence[InputRef], options: ConvertOptions) -> BatchResult` (conceptual API). InputRef: unique submission ID, opaque stream/path, original display name, optional declared MIME, measured bytes/hash. Avoid loading every file into memory. Jobs isolate temp dirs and artifacts. Original filename is never trusted as identity or filesystem path.
-`ConvertOptions.raw_extract: bool = True` (ADR-008). Turning it off is an explicit operator choice recorded in the manifest.
+`ConvertOptions.raw_extract: bool = True` (ADR-008, accepted). Turning it off is an explicit operator choice recorded in the manifest. Cap: `max_raw_values` default 5,000,000 (ADR-008).
 
 ## Adapter contract
 ```python
@@ -114,7 +114,7 @@ ContactImage (E12, content still unverified): `OPFContactCopyContactImage` is a 
 - Opt-in `export_images`: a picture that decodes is written as a separate file `<workbook stem>-pictures/<sha256 first 16 hex>.<ext>` next to the workbook (`ext` from the detected format, else `bin`; the full hash is used if two different images ever share the first 16 hex), content-addressed so identical images share one file and no source text becomes a path. The value is then `mapped`. A picture that does not decode is not exported and stays `lost`. Files are written to a temporary directory and moved into place only after the workbook verifies.
 
 ## XLSX delivery contract
-Each XLSX includes `_manifest`, `_members` (one row per archive member: type, adapter, family, counts), `_warnings`, `_unsupported`, populated family/child sheets and, when raw values exist, `_raw_index` plus `raw_NNNN` partitions. Manifest contains input digest, run version, adapter versions, record counts seen/exported/failed/unsupported, source values mapped/structural/raw/lost with lost reason codes, structural declarations with consumed and failed counts, flags, coverage scope, truncation/overflow indexes and outcome.
+Each XLSX includes `_manifest`, `_members` (one row per archive member: type, adapter, family, counts), `_warnings`, `_unsupported`, populated family/child sheets and, when raw values exist, `_raw_index` plus `raw_NNNN` partitions. Manifest contains input digest, run version, adapter versions, record counts seen/exported/failed/unsupported, source values mapped/structural/raw/lost with lost reason codes, structural declarations with consumed and failed counts, flags, coverage scope, truncation/overflow indexes and outcome. When a member cannot be fingerprinted during planning (for example unsafe XML prefix), `refused_members` lists `member_path:ERROR_CODE` entries (semicolon-separated); those members are **uncounted** at value grain and never contribute to SUCCESS (Russell 2026-10-11).
 - Sheet names <=31 chars, unique, deterministic, escaped.
 - Excel per-sheet row cap 1,048,576; column cap 16,384; cell text cap 32,767 characters. Partition overflowing families into numbered sheets with manifest linking partitions.
 - Preserve Unicode and literal leading whitespace; identifiers/phones/ZIP codes remain text. Protect values starting with = + - @ (and control/whitespace-prefixed variants) from execution by writing them as explicit string-typed cells, not by adding a prefix: the stored text must equal the source value exactly. Confirm behavior with the chosen Excel writer/reader rather than assuming it succeeds.
@@ -123,6 +123,11 @@ Each XLSX includes `_manifest`, `_members` (one row per archive member: type, ad
 - Distinguish absent, empty, null-like, parse-failed and unsupported when available in source.
 - Dates retain the original lexeme; no unverified timezone conversion. Contacts v1 stores dates as text only (ADR-011); a family that later adds parsed interpretation must keep the lexeme beside it.
 - No macro content, formula generation or external hyperlinks generated from untrusted payload by default.
+
+## Terminology: Completeness vs count-conserving (Russell 2026-10-11)
+Use both terms deliberately; they are different grains of the same honesty requirement:
+- **Completeness (record / member grain):** `seen = exported + failed + unsupported` for recognized records; every archive member appears in `_members`, `_unsupported`, or `refused_members`. This does not claim every byte was interpreted.
+- **Count-conserving (source-value grain):** the four-bucket rule below. User-facing SUCCESS notices say **count-conserving**, not “lossless” or “semantically complete.”
 
 ## Completeness contract (count-conserving, not semantic)
 `seen = exported + failed + unsupported` at record/member grain; per-family and per-record counters must reconcile, accounting for skipped nonrecords separately. Unknown archive members must be listed even if their semantics cannot be decoded. No blanket “all contents converted” promise when semantics are unknown. The field-level rule below is the source-value grain of the same contract (finding #13): both must hold where they apply.

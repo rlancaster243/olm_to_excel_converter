@@ -72,6 +72,11 @@ def test_manifest_leads_with_outcome_notice_and_counts() -> None:
     assert dict(rows)["lost"] == "1"
 
 
+def test_manifest_lists_refused_members_when_given() -> None:
+    rows = manifest_rows(Outcome.PARTIAL, [], raw_extract=True, refused_members=[("bad.xml", "ARCHIVE_UNSAFE")])
+    assert dict(rows)["refused_members"] == "bad.xml:ARCHIVE_UNSAFE"
+
+
 def picture_account(pictures: int = 3, raw: int = 0, counted: bool = True) -> MemberAccount:
     a = MemberAccount("c.xml", source_values=10 + pictures + raw, mapped=10, raw=raw)
     a.add_lost(ErrorCode.PICTURE_NOT_EXPORTED, pictures)

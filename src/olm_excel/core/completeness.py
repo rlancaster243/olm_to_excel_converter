@@ -177,6 +177,7 @@ def manifest_rows(
     *,
     raw_extract: bool,
     notice: str | None = None,
+    refused_members: Iterable[tuple[str, str]] = (),
 ) -> list[tuple[str, str]]:
     """Leading `_manifest` rows: outcome and counts first, so a PARTIAL or
     UNSUPPORTED download never reads as a full conversion (02 decision)."""
@@ -184,7 +185,7 @@ def manifest_rows(
     t = totals(accounts)
     if notice is None:
         notice = outcome_notice(outcome, accounts)
-    return [
+    rows: list[tuple[str, str]] = [
         ("outcome", outcome.value),
         ("notice", notice),
         ("source_values", str(t.source_values)),
@@ -195,3 +196,7 @@ def manifest_rows(
         ("uncounted_members", str(t.uncounted_members)),
         ("raw_extract", "on" if raw_extract else "off"),
     ]
+    refused = list(refused_members)
+    if refused:
+        rows.append(("refused_members", "; ".join(f"{path}:{code}" for path, code in refused)))
+    return rows
