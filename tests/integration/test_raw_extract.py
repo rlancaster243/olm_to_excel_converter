@@ -96,3 +96,14 @@ def test_malformed_member_keeps_earlier_rows_and_is_uncounted(tmp_path: Path) ->
     index = read_rows(tmp_path / "t21.xlsx", "_raw_index")[1:]
     assert index[0][5].startswith("uncounted") and index[0][9] == "RECORD_PARSE_ERROR"
     assert outcome is Outcome.UNSUPPORTED
+
+
+def test_quiet_unclaimed_member_still_gets_index_row(tmp_path: Path) -> None:  # finding #14, RE-053-18
+    """An unclaimed member capped to 0 raw rows must still appear in _raw_index (raw=0, lost>0)."""
+    members = [member(1, "capped.xml", b"<r><a>1</a></r>")]
+    out = tmp_path / "quiet.xlsx"
+    outcome, accounts = write_raw_workbook(members, out, submission_id="s", max_values=0)
+    assert accounts[0].raw == 0 and accounts[0].lost_total > 0
+    index = read_rows(out, "_raw_index")
+    assert len(index) == 2  # header + one row
+    assert index[1][1] == "capped.xml" and index[1][6] == "0" and index[1][8] == "false"

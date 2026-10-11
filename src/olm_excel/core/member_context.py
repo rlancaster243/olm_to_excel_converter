@@ -57,6 +57,7 @@ class MemberContext:
         stats: StructuralStats,
         warnings: WarningLog,
         archive_id: str,
+        provenance=None,
     ) -> None:
         unknown = [n for n in allowed_structural if n not in DECLARATIONS]
         if unknown:
@@ -69,6 +70,7 @@ class MemberContext:
         self._allowed: tuple[StructuralDeclaration, ...] = tuple(DECLARATIONS[n] for n in allowed_structural)
         self._stats = stats
         self._warnings = warnings
+        self._provenance = provenance
         self._window: dict[int, SourceValue] = {}
         self._deferred: list[tuple[StructuralDeclaration, SourceValue]] = []
         self._root = ""
@@ -98,13 +100,28 @@ class MemberContext:
         if self._window.pop(value.node_ordinal, None) is None:
             raise ConversionError(ErrorCode.INTERNAL_ERROR, "a source value was settled twice or never issued", scope="member")
 
-    def mapped(self, value: SourceValue) -> None:
+    def _log(self, value: SourceValue, status: str, detail: str = "") -> None:
+        if self._provenance is not None:
+            self._provenance.log(
+                member_ordinal=self.member.ordinal,
+                member_path=self.member.path,
+                element_path=value.element_path,
+                attribute=value.attribute,
+                occurrence=value.node_ordinal,
+                status=status,
+                detail=detail,
+                value=value.value,
+            )
+
+    def mapped(self, value: SourceValue, column: str = "") -> None:
         self._take(value)
         self.account.mapped += 1
+        self._log(value, "mapped", column)
 
     def lost(self, value: SourceValue, reason: ErrorCode) -> None:
         self._take(value)
         self.account.add_lost(reason)
+        self._log(value, f"lost:{reason.value}", reason.value)
 
     def unknown(self, value: SourceValue, record_key: str = "") -> None:
         """Route a value the adapter does not map to raw (or lost when raw extract is off)."""
@@ -124,6 +141,7 @@ class MemberContext:
                 self._take(value)
                 self.account.structural += 1
                 self._stats.consumed[decl.name] += 1
+                self._log(value, "structural", decl.name)
                 return True
             self._stats.failed[decl.name] += 1
             self.warn(ErrorCode.STRUCTURAL_MISMATCH, f"{decl.name} has an invalid value")
@@ -152,6 +170,7 @@ class MemberContext:
             if error is None and decl.check_count(value.value, records_seen):
                 self.account.structural += 1
                 self._stats.consumed[decl.name] += 1
+                self._log(value, "structural", decl.name)
             else:
                 self._stats.failed[decl.name] += 1
                 self.warn(ErrorCode.STRUCTURAL_MISMATCH, f"{decl.name} does not equal the number of records parsed")

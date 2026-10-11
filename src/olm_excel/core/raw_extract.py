@@ -93,12 +93,14 @@ class RawExtractor:
         enabled: bool = True,
         max_values: int = DEFAULT_MAX_VALUES,
         limits: WalkLimits = WalkLimits(),
+        provenance=None,
     ) -> None:
         self._writer = writer
         self._submission_id = submission_id
         self._enabled = enabled
         self._remaining = max_values
         self._limits = limits
+        self._provenance = provenance
         self._raw: Table | None = None  # created on the first raw row, so clean conversions have no raw sheets
         self._index_rows: list[Sequence[str]] = []
 
@@ -109,14 +111,29 @@ class RawExtractor:
     def begin_member(self, member: XmlMember) -> MemberRawState:
         return MemberRawState(member)
 
+    def _log(self, state: MemberRawState, value: SourceValue, status: str, detail: str = "") -> None:
+        if self._provenance is not None:
+            self._provenance.log(
+                member_ordinal=state.member.ordinal,
+                member_path=state.member.path,
+                element_path=value.element_path,
+                attribute=value.attribute,
+                occurrence=value.node_ordinal,
+                status=status,
+                detail=detail or status,
+                value=value.value,
+            )
+
     def route(self, state: MemberRawState, value: SourceValue, account: MemberAccount, record_key: str = "") -> None:
         """Write one unmapped source value as raw rows, or count it as lost."""
         if not self._enabled:
             account.add_lost(ErrorCode.RAW_EXTRACT_DISABLED)
+            self._log(state, value, f"lost:{ErrorCode.RAW_EXTRACT_DISABLED.value}", ErrorCode.RAW_EXTRACT_DISABLED.value)
             return
         if self._remaining <= 0:
             state.stop = ErrorCode.RAW_EXTRACT_LIMIT
             account.add_lost(ErrorCode.RAW_EXTRACT_LIMIT)
+            self._log(state, value, f"lost:{ErrorCode.RAW_EXTRACT_LIMIT.value}", ErrorCode.RAW_EXTRACT_LIMIT.value)
             return
         if self._raw is None:
             self._raw = self._writer.add_table("raw", RAW_COLUMNS, partitioned=True)
@@ -133,15 +150,28 @@ class RawExtractor:
         account.raw += 1
         self._remaining -= 1
         state.last_key = raw_key
+        self._log(state, value, "raw", raw_key)
 
-    def end_member(self, state: MemberRawState, account: MemberAccount, stop: ErrorCode | None = None) -> None:
-        """Add the member's `_raw_index` row. Members with no raw activity and no stop get none."""
+    def end_member(
+        self, state: MemberRawState, account: MemberAccount, stop: ErrorCode | None = None,
+        *, force: bool = False,
+    ) -> None:
+        """Add the member's `_raw_index` row.
+
+        Finding #14: unclaimed members always get a row when enabled, even when
+        quiet (0 raw), so grain never drifts. Claimed members via MemberContext
+        keep the old activity-gated behavior to avoid indexing clean conversions.
+        """
         if not self._enabled:
             return
         stop = stop or state.stop
-        if not (state.first_key or stop or account.raw or account.lost_total):
+        if not force and not (state.first_key or stop or account.raw or account.lost_total):
             return
-        partitions = self._raw.partition_names[state.first_partition:] if state.first_key else []
+        partitions = (
+            self._raw.partition_names[state.first_partition:]
+            if (state.first_key and self._raw is not None)
+            else []
+        )
         self._index_rows.append((
             str(state.member.ordinal), state.member.path, state.first_key, state.last_key, " ".join(partitions),
             str(account.source_values) if account.counted else f"uncounted (>= {account.source_values})",
@@ -163,7 +193,7 @@ class RawExtractor:
                 raise
             account.mark_uncounted(exc.code)
             stop = exc.code
-        self.end_member(state, account, stop)
+        self.end_member(state, account, stop, force=True)
         return account
 
     def finish(self) -> None:

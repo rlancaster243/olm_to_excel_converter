@@ -27,6 +27,7 @@ from olm_excel.core.completeness import MemberAccount, Outcome, Totals, decide_o
 from olm_excel.core.discovery import select_adapter, sniff_signature
 from olm_excel.core.errors import ConversionError, ErrorCode
 from olm_excel.core.member_context import MemberContext, StructuralStats, WarningLog
+from olm_excel.core.provenance import COLUMNS_HEADER, PROVENANCE_HEADER, ProvenanceLog
 from olm_excel.core.raw_extract import DEFAULT_MAX_VALUES, RawExtractor, XmlMember
 from olm_excel.core.walker import WalkLimits, iter_source_values
 from olm_excel.core.xlsx_verify import verify_workbook
@@ -222,12 +223,14 @@ def _write(archive, plan, adapters, writer, pictures, source, options, warnings,
         if id(adapter) in used:
             adapter.prepare(writer)
 
+    provenance = ProvenanceLog()
     extractor = RawExtractor(
         writer,
         submission_id=inventory.sha256[:12],
         enabled=options.raw_extract,
         max_values=options.max_raw_values,
         limits=options.walk_limits,
+        provenance=provenance,
     )
     stats = StructuralStats()
     results: list[MemberResult] = []
@@ -256,7 +259,10 @@ def _write(archive, plan, adapters, writer, pictures, source, options, warnings,
                 )
             continue
         result.adapter_id, result.family = adapter.adapter_id, adapter.family
-        result.account = _convert_claimed(adapter, xml_member, extractor, stats, warnings, inventory.sha256[:12], options)
+        result.account = _convert_claimed(
+            adapter, xml_member, extractor, stats, warnings, inventory.sha256[:12], options,
+            provenance=provenance,
+        )
         if not result.account.counted and result.account.stop_reason is not None:
             warnings.add(
                 member.path,
@@ -308,8 +314,20 @@ def _write(archive, plan, adapters, writer, pictures, source, options, warnings,
     extra += [(f"structural:{name}", f"consumed={c} failed={f}") for name, (c, f) in structural.items()]
     extra += [(f"lost:{reason}", str(count)) for reason, count in sorted(lost.items())]
     extra += [(f"warning:{code}", str(count)) for code, count in sorted(warning_totals.items())]
+    # Finding #7: content sums mod 2^64 over provenance hashes, by status.
+    for status, total in sorted(provenance.sums_by_status().items()):
+        extra.append((f"provenance_sum_{status}", f"{total:#018x}"))
+    extra.append(("provenance_records", str(len(provenance.records))))
     if pictures is not None:
         extra.append(("pictures_exported", str(pictures.files)))
+    # Finding #7: ledger for lost+structural keyed by k, and column map per adapter.
+    if provenance.ledger_rows():
+        ledger = writer.add_table("_provenance", PROVENANCE_HEADER, spill=True)
+        for row in provenance.ledger_rows():
+            ledger.append(row)
+    columns_sheet = writer.add_table("_columns", COLUMNS_HEADER, spill=True)
+    for row in _column_map_rows([a for a in adapters if id(a) in used]):
+        columns_sheet.append(row)
     extra += [(f"sheet:{name}", str(rows)) for name, rows in sorted(writer.sheet_rows.items()) if name != "_manifest"]
     for row in extra:
         manifest.append(row)
@@ -335,7 +353,51 @@ def _write(archive, plan, adapters, writer, pictures, source, options, warnings,
     )
 
 
-def _convert_claimed(adapter, member: XmlMember, extractor, stats, warnings, archive_id, options) -> MemberAccount:
+def _column_map_rows(adapters) -> list[tuple[str, str, str, str]]:
+    """Per-adapter column-to-source map (finding #7). Imported lazily to avoid cycles."""
+    rows: list[tuple[str, str, str, str]] = []
+    try:
+        from olm_excel.adapters.categories import HEADER as CATEGORIES_HEADER
+        from olm_excel.adapters.contacts import (
+            CATEGORIES_HEADER as CONTACT_CATEGORIES_HEADER,
+        )
+        from olm_excel.adapters.contacts import (
+            COLUMNS,
+            CONTACTS_HEADER,
+            EMAILS_HEADER,
+            LISTS_HEADER,
+            LONG_TEXT_HEADER,
+            PICTURES_HEADER,
+        )
+    except Exception:
+        return rows
+    for adapter in adapters:
+        aid = getattr(adapter, "adapter_id", "")
+        if aid == "contacts-olm-v1":
+            for col in CONTACTS_HEADER:
+                src = col
+                for element, short in COLUMNS.items():
+                    if short == col:
+                        src = element
+                        break
+                rows.append((aid, "contacts", col, src))
+            for col in EMAILS_HEADER:
+                rows.append((aid, "contact_emails", col, "contactEmailAddress/@OPFContactEmailAddress*"))
+            for col in CONTACT_CATEGORIES_HEADER:
+                rows.append((aid, "contact_categories", col, "OPFContactCopyCategoryList/category/@OPFCategoryCopy*"))
+            for col in LISTS_HEADER:
+                rows.append((aid, "contact_lists", col, "OPFContactCopyChildren|FuriganaChildrensNames/string"))
+            for col in PICTURES_HEADER:
+                rows.append((aid, "contact_pictures", col, "OPFContactAddPicture|OPFContactCopyContactImage"))
+            for col in LONG_TEXT_HEADER:
+                rows.append((aid, "contact_long_text", col, "chunked long text"))
+        elif aid == "categories-olm-v1":
+            for col in CATEGORIES_HEADER:
+                rows.append((aid, "categories", col, "category/@OPFCategoryCopy*"))
+    return rows
+
+
+def _convert_claimed(adapter, member: XmlMember, extractor, stats, warnings, archive_id, options, provenance=None) -> MemberAccount:
     account = MemberAccount(member.path)
     ctx = MemberContext(
         member=member,
@@ -345,6 +407,7 @@ def _convert_claimed(adapter, member: XmlMember, extractor, stats, warnings, arc
         stats=stats,
         warnings=warnings,
         archive_id=archive_id,
+        provenance=provenance,
     )
     session = adapter.start(ctx)
     error: ConversionError | None = None
