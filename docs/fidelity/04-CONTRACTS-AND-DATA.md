@@ -123,10 +123,11 @@ Each XLSX includes `_manifest`, `_members` (one row per archive member: type, ad
 - Dates retain the original lexeme; no unverified timezone conversion. Contacts v1 stores dates as text only (ADR-011); a family that later adds parsed interpretation must keep the lexeme beside it.
 - No macro content, formula generation or external hyperlinks generated from untrusted payload by default.
 
-## Completeness contract
+## Completeness contract (count-conserving, not semantic)
 `seen = exported + failed + unsupported` at the agreed classification grain; per-family and per-record counters must reconcile, accounting for skipped nonrecords separately. Unknown archive members must be listed even if their semantics cannot be decoded. No blanket “all contents converted” promise when semantics are unknown.
-Field-level completeness rule, per XML member and per family:
+Field-level count-conserving rule, per XML member and per family:
 `source_values == mapped + structural + raw + lost`
+Counts conserve source values; they do not prove semantic completeness. SUCCESS means every counted value was mapped or checked structural, never that every meaning was understood.
 - `mapped`: the value contributes to at least one family or child-sheet cell; each source value counts once.
 - `structural`: the value matched a structural declaration and passed its validator (see Structural values).
 - `raw`: the value was written as a raw extract row (chunks count once).

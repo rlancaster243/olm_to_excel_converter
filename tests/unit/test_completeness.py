@@ -117,4 +117,4 @@ class TestOutcomeNotice:  # T35
         assert "only because" not in outcome_notice(Outcome.UNSUPPORTED, [picture_account()])
 
     def test_success_is_fully_converted(self) -> None:
-        assert outcome_notice(Outcome.SUCCESS, [account(mapped=10)]) == "Fully converted."
+        assert outcome_notice(Outcome.SUCCESS, [account(mapped=10)]) == "Fully converted (count-conserving)."

@@ -455,7 +455,7 @@ def test_a_fully_mapped_archive_is_a_success(tmp_path: Path) -> None:
     archive = write_zip(tmp_path / "a.olm", {"c.xml": contacts_member(3, exp, "c.xml", picture_every=0), "Categories.xml": categories_member(2, exp)})
     result, wb = run(tmp_path, archive)
     assert result.outcome is Outcome.SUCCESS and (result.totals.raw, result.totals.lost) == (0, 0)
-    assert manifest(wb)["notice"] == "Fully converted."
+    assert manifest(wb)["notice"] == "Fully converted (count-conserving)."
 
 
 def test_unsafe_and_corrupt_archives_fail_without_leaving_files(tmp_path: Path) -> None:
@@ -579,7 +579,7 @@ def test_no_picture_message_once_images_are_exported(tmp_path: Path, built) -> N
     archive, _ = built
     result, wb = run(tmp_path, archive, export_images=True)
     assert result.outcome is Outcome.SUCCESS
-    assert manifest(wb)["notice"] == result.notice == "Fully converted."
+    assert manifest(wb)["notice"] == result.notice == "Fully converted (count-conserving)."
 
 
 def test_undecodable_pictures_with_export_on_never_advise_export(tmp_path: Path) -> None:  # T35

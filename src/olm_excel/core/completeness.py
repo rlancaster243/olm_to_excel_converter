@@ -126,7 +126,7 @@ def outcome_notice(
     suggest that image export alone would give SUCCESS.
     """
     if outcome is Outcome.SUCCESS:
-        return "Fully converted."
+        return "Fully converted (count-conserving)."
     accounts = list(accounts)
     t = totals(accounts)
     lost: Counter[ErrorCode] = Counter()

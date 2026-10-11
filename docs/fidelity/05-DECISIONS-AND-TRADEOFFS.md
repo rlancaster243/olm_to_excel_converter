@@ -93,7 +93,7 @@ Revisit: the real date lexemes are confirmed unambiguous and users ask for date 
 | Parent module | medium | medium | medium | shared release/runtime |
 | Standalone adapter core | medium initially | high | high if verified | fixture and maintenance overhead |
 | Generic XML flattening | deceptively high | superficial | low | fabricated semantics, relationship loss |
-| Raw extract (one row per value, ADR-008) | medium | supports adapter discovery | high: lossless and countable | consumer usability, output volume |
+| Raw extract (one row per value, ADR-008) | medium | supports adapter discovery | high: count-conserving and countable | consumer usability, output volume |
 
 ## Decision authority
 Product owner approves families and UX; architecture owner approves boundaries and ADRs; security/privacy reviewer approves hosting and retention; verification owner approves qualification evidence. A single individual may fill multiple roles, but verification independence must be disclosed.
