@@ -53,6 +53,8 @@ _UNSUPPORTED_REASONS = {
 
 @dataclass(frozen=True)
 class ConvertOptions:
+    # ADR-008 PROPOSED: raw_extract default-on, max_raw_values cap and raw_NNNN
+    # layout are explicit options pending architecture review, not decided by merging.
     raw_extract: bool = True
     export_images: bool = False
     overwrite: bool = False

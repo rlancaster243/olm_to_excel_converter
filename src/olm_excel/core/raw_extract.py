@@ -54,6 +54,9 @@ RAW_INDEX_COLUMNS = (
 )
 
 # Placeholder until measured on real archives (W08); configurable per run.
+# ADR-008 mechanics are PROPOSED pending review: this default must stay an
+# explicit option (see ConvertOptions.max_raw_values / --max-raw-values),
+# never silent architecture. Docs: docs/fidelity/05-DECISIONS-AND-TRADEOFFS.md.
 DEFAULT_MAX_VALUES = 5_000_000
 
 
