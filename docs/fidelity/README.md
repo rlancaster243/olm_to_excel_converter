@@ -1,7 +1,7 @@
 # OLM to Excel — Engineering Fidelity Dossier
 
-Status: PROPOSED target architecture; documentation-only. Date: 2026-10-08.
-Scope: `rlancaster243/olm_to_excel_converter`. Authority: planning proposal, not implementation or verified format support.
+Status: **Accepted** target architecture for contacts v1 (Russell 2026-10-11); code in [PR #9](https://github.com/rlancaster243/olm_to_excel_converter/pull/9). Date: 2026-10-08 dossier; decisions 2026-10-11.
+Scope: `rlancaster243/olm_to_excel_converter`. Authority: ADRs in [05-DECISIONS-AND-TRADEOFFS.md](05-DECISIONS-AND-TRADEOFFS.md) govern implementation.
 
 ## Mission
 Convert one or many Outlook for Mac OLM archives into Excel workbooks, preserving supported record values, provenance and diagnostic visibility. Avoid silent loss. Make non-contact records and schema variants discoverable without promising impossible universal semantic interpretation.
@@ -11,7 +11,7 @@ Convert one or many Outlook for Mac OLM archives into Excel workbooks, preservin
 - `docs/samples/sample.olm` is synthetic, not a real Outlook export.
 - Parent `mbox_to_eml_converter` source snapshot is frozen, read-only context, not an importable dependency.
 - Synthetic 20k-contact benchmark (~6 s and ~297 MB peak RSS) is historical, unreplicated for this repo.
-- Earlier recommendation B (module within parent) was conditional on a narrow contacts MVP. This new standalone repository is now the proposed ownership/deployment boundary; actual deployment remains undecided.
+- Earlier recommendation B (module within parent) was conditional on a narrow contacts MVP. **ADR-001 (accepted):** this repository is the ownership boundary; the parent integrates via installable `olm-excel`.
 
 ## Governing sequence
 FRAME → UNDERSTAND → DEFINE → ARCHITECT → DESIGN → VERIFY BEFORE BUILD → PLAN → HANDOFF → RECONCILE.

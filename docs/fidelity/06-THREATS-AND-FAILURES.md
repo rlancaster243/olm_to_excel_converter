@@ -13,7 +13,7 @@ Protected assets: local filesystem, memory/CPU, private mail/contact content, ou
 | ZIP bombs / high expansion ratio | cap total uncompressed bytes, per-member bytes, compression ratio, entry count and nesting depth | adversarial compression corpus |
 | XML entities, external resource access, deep nesting | hardened XML parser; prohibit external entities/DTD as feasible; depth and node/size limits | XXE and deep XML fixtures |
 | Huge single XML / pathological recursion | incremental parser + bounded buffers; stop on quota | memory profile |
-| Formula injection in XLSX | force text and sanitize formula-triggering strings; roundtrip with Excel library | malicious-cell tests |
+| Formula injection in XLSX | write explicit string-typed cells so formula-like values stay inert without altering text (no prefixing); roundtrip with Excel library. Residual: re-saving the workbook as CSV can make such values live again | malicious-cell tests with exact text equality |
 | Filename collisions / archive ordering | deterministic safe names, source-derived run identity, isolated job dirs | concurrent duplicate-name uploads |
 | Sensitive content in logs | structured metadata-only logging; explicitly prohibit personal field values | log capture tests |
 | Temp file leakage | isolated permissions, lifecycle cleanup, crash recovery janitor | aborted-run test |
@@ -21,9 +21,15 @@ Protected assets: local filesystem, memory/CPU, private mail/contact content, ou
 | Unexpected host networking | offline default; dependency policy; scan for outbound calls | network-blocked integration tests |
 | Malformed encodings and dates | retain original lexemes and mark undecodable data, no silent defaults | encoding corpus |
 | Unsupported proprietary payload | mark UNSUPPORTED/PARTIAL and enumerate evidence | unknown-format tests |
+| Raw extract row explosion (many tiny nodes) | `max_raw_values` quota, partitioned sheets, stop with RAW_EXTRACT_LIMIT, never silent truncation | node-dense synthetic fixture |
+| Raw output read as interpreted data | `raw_` sheet prefix, manifest flag, outcome never SUCCESS when any source value is raw or lost | workbook and UI warning tests |
+| Adapter overstates its own coverage | core walker counts source values independently; adapters only report mapped ordinals | under-reporting adapter fixture |
+| Record data hidden by declaring it structural | closed declarations in the registry with evidence; validators run by the core; per-declaration consumed and failed counts in `_manifest`; failed checks route to raw or lost | T26-T28: undeclared names never structural; bad values fail |
+| Hostile picture payload (oversized, malformed, path-like) | pictures are only base64-decoded and magic-byte sniffed, never parsed with an image library; file names derive from the SHA-256, never from source text; size cap per picture; files written to a temporary directory and moved in only after workbook verification | hostile picture fixtures (T31) |
+| Exported image files opened by other software | residual risk, declared: the tool never renders or executes images, but viewers may; files stay opt-in | documented limitation |
 
 ## Failure taxonomy
-INPUT_INVALID, ARCHIVE_UNSAFE, RESOURCE_LIMIT, FORMAT_UNKNOWN, AMBIGUOUS_ADAPTER, RECORD_PARSE_ERROR, FIELD_LOSS_RISK, EXCEL_LIMIT, OUTPUT_IO, CANCELLED, INTERNAL_ERROR.
+INPUT_INVALID, ARCHIVE_UNSAFE, RESOURCE_LIMIT, FORMAT_UNKNOWN, AMBIGUOUS_ADAPTER, RECORD_PARSE_ERROR, FIELD_LOSS_RISK, EXCEL_LIMIT, RAW_EXTRACT_LIMIT, RAW_EXTRACT_DISABLED, PICTURE_NOT_EXPORTED, STRUCTURAL_MISMATCH (warning), ADAPTER_UNREPORTED (warning: adapter left a value unsettled, swept to raw), OUTPUT_IO, CANCELLED, INTERNAL_ERROR.
 Errors must include stable code, scope (archive/member/record), recoverability, corrective action and safe metadata; no raw personal data.
 
 ## Recovery and containment

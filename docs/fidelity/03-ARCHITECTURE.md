@@ -14,6 +14,9 @@ flowchart TD
  R --> P["Streaming record parser"]
  P --> C["Canonical record envelopes + provenance"]
  C --> X["Family projection / workbook writer"]
+ D --> W["Raw extractor: unclaimed XML members"]
+ C --> W
+ W --> X
  X --> O["Per-file XLSX + conversion report"]
  O --> Z["Batch ZIP and aggregate manifest"]
  B --> E["Job state, progress, cancellation"]
@@ -24,12 +27,14 @@ flowchart TD
 ```
 
 ## Boundaries and owners
+Implementation note (finding #13): `RecordEnvelope`/`iter_records` above describe the target contract; the built code uses `MemberSession.feed` with `MemberContext.mapped/unknown/lost/check_structural` and sweeps unsettled values with `ADAPTER_UNREPORTED` (see `core/member_context.py`, `core/convert.py`). Revisit when a second family needs shared projection.
 | Boundary | Producer → consumer | Contract | Failure/ownership |
 |---|---|---|---|
 | Upload | UI/CLI → coordinator | read-only file handles, opaque job IDs, limits | adapter owns no upload session state |
 | Inspection | guard → discovery | safe indexed member descriptors with sizes/hashes | guard rejects unsafe ZIP before parse |
 | Selection | discovery → adapter registry | signatures + confidence + version, no filename-only assertion | registry rejects ambiguity/unsupported |
-| Extraction | adapter → canonical stream | records, identities, typed fields, unknowns and source locators | adapter is accountable for claimed coverage |
+| Extraction | adapter → canonical stream | records, identities, typed fields, unknowns and source locators | adapter is accountable for mapping; the core walker counts source values so coverage is not self-reported |
+| Raw extraction | discovery (unclaimed members) and envelopes (unknown fields) → XLSX | raw value rows with positional path and provenance, no semantic claim (04) | extractor owns raw completeness counters; never infers record boundaries |
 | Projection | canonical stream → XLSX | normalized sheets, safe cell policies and stable naming | writer enforces Excel constraints |
 | Completion | writer → batch collector | immutable result manifest and outcome state | coordinator owns aggregation/retry/cancel |
 
@@ -44,6 +49,7 @@ Do not send raw contacts or message bodies through observability or control even
 - `adapters/`: independently versioned readers for proven OLM variants and record families; capability declarations.
 - `core/records.py`: immutable canonical envelope + typed values + raw unknown references.
 - `core/projection.py`: normalized family views and overflow mapping without semantic guessing.
+- `core/raw_extract.py`: schema-agnostic streaming source-value walker. Adapters read XML through it; it counts every source value, and emits raw rows for unclaimed XML members and unmapped values (default-on, ADR-008).
 - `core/xlsx_writer.py`: streaming or write-only workbook writer; workbook constraints and guard against formula execution.
 - `core/coordinator.py`: bounded sequential/default-concurrency processing, deterministic job outcomes.
 - `interfaces/cli.py` and `interfaces/ui.py`: thin presentation adapters only.
@@ -55,7 +61,7 @@ Names and layout are proposals, not preexisting paths.
 2. Guard validates ZIP signature, members and quotas before or during bounded streaming.
 3. Discovery enumerates member signatures and matches registry declarations; ambiguity yields UNSUPPORTED/PARTIAL, never guessed extraction.
 4. Adapter emits envelopes with source family, source locator and typed field collections; parse failures preserve record-level diagnostics.
-5. Projection maps families to sheets and child tables. Unknown values receive a loss inventory and optional raw-safe diagnostic extract.
+5. Projection maps families to sheets and child tables. Unknown fields and unclaimed XML members go to the raw extract (default-on, ADR-008) and the unsupported inventory; non-XML members get inventory only.
 6. Workbook is written to a temporary isolated artifact; roundtrip structure and counts verified; only then atomically marked downloadable.
 7. Batch aggregator collects independent outcomes, per-file XLSX and manifest into ZIP; retries never overwrite another input’s artifact.
 
