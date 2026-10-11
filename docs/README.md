@@ -2,7 +2,7 @@
 
 ## Open questions
 
-1. **Real OLM layout** — Contact XML path, namespaces, and field names (e.g. business phone) have **not** been checked against an actual Outlook for Mac export; assessment marks this **Unknown** until a real file is inspected. See [ASSESSMENT.md](ASSESSMENT.md), [fidelity/01-PROBLEM-AND-REALITY.md](fidelity/01-PROBLEM-AND-REALITY.md), and [samples/README.md](samples/README.md).
+1. **Real OLM layout** — Contact XML paths, namespaces and field names are now known for **one** contacts-only export (structure-only profile, evidence E09). Other Outlook versions and record families are still **Unknown**. See [ASSESSMENT.md](ASSESSMENT.md), [fidelity/01-PROBLEM-AND-REALITY.md](fidelity/01-PROBLEM-AND-REALITY.md), and [samples/README.md](samples/README.md).
 2. **Shipping shape and v1 scope** — [ASSESSMENT.md](ASSESSMENT.md) and [CONVERTER-OLM-report.md](CONVERTER-OLM-report.md) rank **approach B** (parent-repo `olm_contacts` module + thin Streamlit wire) for a narrow contacts MVP, with **approach C** (separate app) when mapping UI or large archives land in v1. The [Engineering Fidelity Dossier](fidelity/README.md) (**PROPOSED**, 2026-10-08) treats **this repository** as the standalone conversion core (see [ADR-001](fidelity/05-DECISIONS-AND-TRADEOFFS.md)) and scopes **target** output toward multiple record families when validated—not contacts-only forever. Product acceptance still **OPEN** on “full conversion” families and partial-download UX; see [fidelity/02-PRD-AND-ACCEPTANCE.md](fidelity/02-PRD-AND-ACCEPTANCE.md).
 
 ---
@@ -33,7 +33,7 @@ Both bodies agree on several **observed** facts: this repo is still **pre-implem
 | **v1 / target scope** | Contacts-first MVP; flip triggers for mail, mapping, streaming, multi-GB | **Target** includes mail, calendar, tasks, notes, groups when structures are understood; **P1** = contacts vertical slice on **real** exports; full family set gated by evidence |
 | **Archive discovery** | Inferred path from synthetic sample (`Accounts/…/Contacts.xml`) | **F03 / ADR-002:** discovery by **content signatures**, not filename/path alone |
 | **Parsing / memory** | Parent pattern and bench imply whole-buffer / in-memory XML risk; iterparse noted as unmeasured fix | **ADR-004 / N02:** streaming, bounded memory; no requirement to hold whole XML trees |
-| **Success semantics** | Risks of silent omission; report dict in inferred `olm_to_xlsx` sketch | **ADR-006–007:** SUCCESS vs PARTIAL vs UNSUPPORTED vs FAILED; no silent canonical mapping of unknown fields |
+| **Success semantics** | Risks of silent omission; report dict in inferred `olm_to_xlsx` sketch | **ADR-006–008:** SUCCESS vs PARTIAL vs UNSUPPORTED vs FAILED; no silent canonical mapping of unknown fields; field-level rule `source_values = mapped + structural + raw + lost` decides SUCCESS; default-on raw extract delivers unmapped values as labeled raw rows |
 | **Delivery** | Streamlit monolith context; 200 MB upload cap (Streamlit default) discussed | **ADR-005:** local-first default; multi-file batch, per-file XLSX + ZIP; hosting **OPEN** |
 | **Verification** | Parent repo: no tests/CI **observed** | **07-VERIFICATION-PLAN:** golden real-export oracles, security corpus—**designed, not executed** |
 

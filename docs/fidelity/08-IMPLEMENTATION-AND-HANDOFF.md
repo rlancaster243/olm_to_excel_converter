@@ -5,11 +5,11 @@ Status: PROPOSED, not executed. Implement in reviewable PRs, no direct unreviewe
 ## Dependency sequence
 W00: Evidence and scope — consented real exports, fixtures metadata, confirm family scope, output example and privacy rules. Exit: U01/U02/U04 reduced and PRD reviewable.
 W01: Package and quality skeleton — src layout, pyproject lock strategy, CLI stub, tests/CI, static typing, formatting. Exit: clean reproducible development environment.
-W02: Safe archive intake — ZIP guard, member inventory, quotas, malformed archive diagnostics. Exit Q1.
-W03: Schema discovery and adapter API — probes, registry, conflict resolution and unknown inventory. Exit: deterministic selection on labeled fixtures.
-W04: Canonical envelope and coverage accounting — provenance/identity/time/multivalue records. Exit: independently checked contract tests.
-W05: Contacts vertical slice — a **real** format contact adapter, streaming, normalized sheet export and warnings. Exit Q2.
-W06: Batch orchestration and surface — multi-upload local UI + CLI, cancel, progress, per-file download, aggregate ZIP. Exit Q3.
+W02: Safe archive intake — ZIP guard, member inventory, quotas, malformed archive diagnostics. Exit Q1. Initial quota defaults are placeholders sized from E09 (74 MB largest member, stored uncompressed, 4 members) and must be measured on larger exports (W08).
+W03: Schema discovery and adapter API — probes, registry, conflict resolution and unknown inventory; the adapter API fixes the source-value walker interface adapters consume (implemented in W04). Exit: deterministic selection on labeled fixtures.
+W04: Canonical envelope and coverage accounting — provenance/identity/time/multivalue records, plus the core source-value walker, field-level completeness counters and the default-on raw extractor (04 Source values, Raw extract and Completeness contracts, ADR-008). Exit: independently checked contract tests including T17-T24.
+W05: Contacts vertical slice — a **real** format contact adapter, streaming, normalized sheet export and warnings. Exit Q2. Adapter v1 follows the E09 contacts contract in 04 and is checked against the private real archive by counts only.
+W06: Batch orchestration and surface — multi-upload local UI + CLI, cancel, progress, per-file download with outcome labeling (T25), aggregate ZIP. Exit Q3.
 W07: Family adapters — messages/calendar/tasks/notes/groups and attachment metadata, each gated by real reference exports; dependencies independent where possible. Exit Q4 per family, no speculative support checkboxes.
 W08: Hardening — large XML memory profile, adversarial/fuzz, cleanup, Excel boundary cases, stable packaging and privacy review. Exit Q5.
 W09: Qualified release — documented support matrix, user guide, limitations, release artifacts, recovery playbook and monitoring profile. Exit: owner accepts scope-limited release.
@@ -21,7 +21,7 @@ For every Wxx task require: objective, governing docs/revisions, allowed files, 
 ## Suggested initial repository structure
 ```text
 src/olm_excel/
-  core/{archive_guard,discovery,records,projection,xlsx_writer,coordinator,report}.py
+  core/{archive_guard,discovery,records,projection,raw_extract,xlsx_writer,coordinator,report}.py
   adapters/
   interfaces/{cli,ui}.py
 tests/{unit,integration,golden,security,performance,fixtures}/
@@ -37,7 +37,7 @@ Implementation-local choice: allowed if exact contract preserved and tested.
 Programming design changes (identity, state, retries): escalate.
 Architecture changes (streaming boundary, adapter authority, storage/trust): escalate.
 Requirements changes (family scope, partial semantics, privacy): escalate.
-Forbidden: silently declare any new schema supported, drop unknown records without reporting, bypass limits, commit private fixtures, or modify parent source snapshot.
+Forbidden: silently declare any new schema supported, promote raw extract rows into family sheets without an adapter, drop unknown records without reporting, bypass limits, commit private fixtures, or modify parent source snapshot.
 
 ## Work ordering and verification
 One vertical slice before parallel family work. PRs should link requirement IDs, ADR IDs, affected contracts, tests and rollback. Review architecture conformance separately from test green. Required review order: inspection → implementation → tests/negative cases → documentation reconciliation → qualification → merge.
