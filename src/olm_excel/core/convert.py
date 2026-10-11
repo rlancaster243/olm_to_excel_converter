@@ -196,8 +196,12 @@ def _plan(archive: SafeArchive, adapters: list, warnings: WarningLog) -> list[_P
             try:
                 with archive.open_member(member) as stream:
                     signature = sniff_signature(stream)
-            except ConversionError:
+            except ConversionError as exc:
+                # Finding #4: a refused/unreadable member must not vanish silently.
+                # Ledger at member grain now; _write adds the outcome-level warning
+                # from the walk error as well, so _warnings is never empty.
                 signature = None
+                warnings.add(member.path, exc.code, f"member could not be fingerprinted: {exc.code.value}")
             if signature is not None:
                 adapter, results = select_adapter(signature, adapters)
                 if adapter is None and sum(r.confident for r in results) > 1:
@@ -244,9 +248,21 @@ def _write(archive, plan, adapters, writer, pictures, source, options, warnings,
         adapter = planned.adapter
         if adapter is None:
             result.account = extractor.extract(xml_member)
+            if not result.account.counted and result.account.stop_reason is not None:
+                warnings.add(
+                    member.path,
+                    result.account.stop_reason,
+                    f"member not fully read: {result.account.stop_reason.value}",
+                )
             continue
         result.adapter_id, result.family = adapter.adapter_id, adapter.family
         result.account = _convert_claimed(adapter, xml_member, extractor, stats, warnings, inventory.sha256[:12], options)
+        if not result.account.counted and result.account.stop_reason is not None:
+            warnings.add(
+                member.path,
+                result.account.stop_reason,
+                f"member not fully read: {result.account.stop_reason.value}",
+            )
     extractor.finish()
 
     accounts = [r.account for r in results if r.account is not None]

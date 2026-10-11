@@ -86,7 +86,7 @@ def _zip(tmp_path: Path, members: dict[str, bytes]) -> Path:
     return path
 
 
-def test_member_types_unsafe_names_and_ratio_skip(tmp_path: Path) -> None:
+def test_member_types_and_ratio_skip(tmp_path: Path) -> None:
     nested = io.BytesIO()
     with zipfile.ZipFile(nested, "w") as z:
         z.writestr("inner.txt", "x")
@@ -94,14 +94,40 @@ def test_member_types_unsafe_names_and_ratio_skip(tmp_path: Path) -> None:
         "Local/a.xml": b"<?xml version='1.0'?><r><v>1</v></r>",
         "Local/b.bin": b"\x00\x01binary",
         "Local/c.zip": nested.getvalue(),
-        "../escape.xml": b"<r/>",
         "Local/bomb.xml": b"<r>" + b" " * 5_000_000 + b"</r>",
     }))
     groups = {g["member_pattern"]: g for g in report["member_groups"]}
-    assert report["unsafe_member_names"] == 1
+    assert report["unsafe_member_names"] == 0
     assert groups["Local/~file"]["types"] == {"binary": 1, "zip": 1}
     assert groups["Local/~file.xml"]["skipped"] == {"size_or_ratio_limit": 1}
     assert report["input"]["container"] == "zip"
+
+
+def test_unsafe_archive_is_rejected_before_profiling(tmp_path: Path) -> None:
+    # Finding #1: the profiler must not touch members without guard checks.
+    report = profile_archive(_zip(tmp_path, {
+        "Local/a.xml": b"<r><v>1</v></r>",
+        "../escape.xml": b"<r/>",
+    }))
+    assert report["error"].startswith("ARCHIVE_UNSAFE")
+    assert "member_groups" not in report
+
+
+def test_duplicate_names_are_rejected_before_profiling(tmp_path: Path) -> None:
+    path = tmp_path / "dup.olm"
+    with zipfile.ZipFile(path, "w") as z:
+        z.writestr("a/b.xml", b"<r/>")
+        z.writestr("a\\b.xml", b"<r/>")
+    report = profile_archive(path)
+    assert report["error"].startswith("ARCHIVE_UNSAFE")
+
+
+def test_ratio_limit_matches_archive_guard() -> None:
+    from olm_excel.core.archive_guard import ArchiveLimits
+    from olm_excel.core import profile as profile_mod
+
+    assert profile_mod.MAX_RATIO == ArchiveLimits().max_ratio == 100.0
+    assert profile_mod.MAX_PARSE_BYTES == ArchiveLimits().max_member_uncompressed
 
 
 def test_malformed_xml_is_counted_as_an_error_code_only(tmp_path: Path) -> None:

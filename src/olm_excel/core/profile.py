@@ -31,6 +31,7 @@ from pathlib import Path
 from typing import Any
 
 from olm_excel import __version__
+from olm_excel.core.archive_guard import ArchiveLimits, MemberInfo, SafeArchive
 from olm_excel.core.errors import ConversionError
 from olm_excel.core.sniff import SNIFF_BYTES as _SNIFF_BYTES
 from olm_excel.core.sniff import sniff_kind as _sniff
@@ -53,9 +54,19 @@ _TOKEN_SPLIT = re.compile(r"[^a-z#]+")
 _INDEX = re.compile(r"\[(\d+)\]")
 _ID_LIKE = re.compile(r"[0-9A-Fa-f-]{8,}")  # hex IDs and GUIDs
 
-# Members larger than this, or expanding more than MAX_RATIO, are listed but not parsed.
+# Members larger than the guard allows, or expanding past its ratio, are listed
+# but not parsed. Thresholds are unified with ArchiveLimits defaults
+# (finding #10): the profiler validates unsafe names through SafeArchive first,
+# then skips single over-limit members with the same thresholds.
+# Kept as module aliases so tests can pin the unified values.
 MAX_PARSE_BYTES = 2 * 1024**3
-MAX_RATIO = 200
+MAX_RATIO = 100.0
+_RELAXED_PROFILE_LIMITS = ArchiveLimits(
+    max_entries=10_000_000,
+    max_total_uncompressed=1 << 50,
+    max_member_uncompressed=1 << 40,
+    max_ratio=1e9,
+)
 
 
 @dataclass
@@ -139,15 +150,33 @@ def profile_archive(
     reveal_names: bool = False,
     progress: Callable[[int, int], None] | None = None,
     limits: WalkLimits = WalkLimits(),
+    archive_limits: ArchiveLimits = ArchiveLimits(),
 ) -> dict[str, Any]:
-    """Return a structure-only profile of the archive at ``path`` (read-only)."""
+    """Return a structure-only profile of the archive at ``path`` (read-only).
+
+    The archive is validated through SafeArchive first, so duplicate names,
+    symlinks, absolute/parent paths, control characters and size/ratio breaches
+    reject the whole report instead of being profiled without guard checks
+    (finding #1). Per-member size/ratio skips below reuse the same
+    ArchiveLimits thresholds.
+    """
     path = Path(path)
     redact = SegmentRedactor(reveal=reveal_names)
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return {
+            "tool": f"olm-excel {__version__} profile",
+            "contains_values": False,
+            "names_redacted": not reveal_names,
+            "input": {"bytes": 0},
+            "error": "INPUT_INVALID: cannot read input",
+        }
     report: dict[str, Any] = {
         "tool": f"olm-excel {__version__} profile",
         "contains_values": False,
         "names_redacted": not reveal_names,
-        "input": {"bytes": path.stat().st_size},
+        "input": {"bytes": size},
     }
     with path.open("rb") as fh:
         report["input"]["sha256"] = hashlib.file_digest(fh, "sha256").hexdigest()
@@ -157,37 +186,54 @@ def profile_archive(
         report["error"] = "INPUT_INVALID: not a ZIP container"
         return report
 
+    try:
+        archive = SafeArchive.open(path, archive_limits)
+    except ConversionError as exc:
+        from olm_excel.core.errors import ErrorCode as _Code
+
+        if exc.code in (_Code.ARCHIVE_UNSAFE, _Code.INPUT_INVALID):
+            report["error"] = f"{exc.code.value}: {exc}"
+            return report
+        # RESOURCE_LIMIT on open means one member breaches size/ratio/total:
+        # fall back to a relaxed inventory so unsafe names are still rejected
+        # by the guard, but over-limit members are skipped per-member below.
+        if exc.code is not _Code.RESOURCE_LIMIT:
+            report["error"] = f"{exc.code.value}: {exc}"
+            return report
+        try:
+            archive = SafeArchive.open(path, _RELAXED_PROFILE_LIMITS)
+        except ConversionError as exc2:
+            report["error"] = f"{exc2.code.value}: {exc2}"
+            return report
+
     groups: dict[str, _GroupStats] = defaultdict(_GroupStats)
-    unsafe_names = 0
-    with zipfile.ZipFile(path) as archive:
-        infos = [i for i in archive.infolist() if not i.is_dir()]
-        report["input"]["members"] = len(infos)
-        for n, info in enumerate(infos, start=1):
+    with archive:
+        members = list(archive.inventory.members)
+        report["input"]["members"] = len(members)
+        for n, member in enumerate(members, start=1):
             if progress:
-                progress(n, len(infos))
-            name = info.filename
-            if name.startswith(("/", "\\")) or ".." in name.replace("\\", "/").split("/"):
-                unsafe_names += 1
+                progress(n, len(members))
+            name = member.path
             group = groups[redact.path(name)]
             group.members += 1
-            group.bytes_uncompressed += info.file_size
-            group.bytes_compressed += info.compress_size
-            ratio = info.file_size / info.compress_size if info.compress_size else 0.0
-            group.max_ratio = max(group.max_ratio, ratio)
-            if info.flag_bits & 0x1:
+            group.bytes_uncompressed += member.size
+            group.bytes_compressed += member.compressed
+            group.max_ratio = max(group.max_ratio, member.ratio)
+            if member.encrypted:
                 group.encrypted += 1
                 group.types["encrypted"] += 1
                 continue
-            if info.file_size > MAX_PARSE_BYTES or ratio > MAX_RATIO:
+            if member.size > archive_limits.max_member_uncompressed or (
+                member.compressed and member.ratio > archive_limits.max_ratio
+            ):
                 group.skipped["size_or_ratio_limit"] += 1
                 continue
-            with archive.open(info) as member:
-                kind = _sniff(member.read(_SNIFF_BYTES))
+            kind = archive.sniff(member)
             group.types[kind] += 1
             if kind == "xml":
-                _profile_xml(archive, info, group, limits)
+                _profile_xml(archive, member, group, limits)
 
-    report["unsafe_member_names"] = unsafe_names
+    report["unsafe_member_names"] = 0
     report["member_groups"] = [_group_report(pattern, g) for pattern, g in sorted(groups.items())]
     report["totals"] = {
         "member_groups": len(groups),
@@ -197,15 +243,15 @@ def profile_archive(
     return report
 
 
-def _profile_xml(archive: zipfile.ZipFile, info: zipfile.ZipInfo, group: _GroupStats, limits: WalkLimits) -> None:
+def _profile_xml(archive: SafeArchive, member: MemberInfo, group: _GroupStats, limits: WalkLimits) -> None:
     # Values arrive in document order, so all values of one element instance are
     # seen before the next instance with the same collapsed path: remembering the
     # last instance per collapsed path is enough, and is bounded by schema size.
     last_instance: dict[str, str] = {}
     root_seen = False
     try:
-        with archive.open(info) as member:
-            for value in iter_source_values(member, limits):
+        with archive.open_member(member) as stream:
+            for value in iter_source_values(stream, limits):
                 group.source_values += 1
                 collapsed, _, depth = _collapse(value.element_path)
                 if not root_seen:

@@ -685,3 +685,28 @@ def test_a_scalar_whose_content_went_to_raw_is_not_listed_as_empty(tmp_path: Pat
     (contact,) = table_rows(wb, "contacts")
     assert "Title" not in contact["empty_fields"].split("; ")
     assert "tail" in {r["value"] for r in table_rows(wb, "raw_0001")} and result.outcome is Outcome.PARTIAL
+
+
+def test_refused_member_is_ledgered_not_silent(tmp_path: Path) -> None:  # finding #4
+    """A member the sniffer cannot fingerprint must not vanish: uncounted, warned, never SUCCESS."""
+    from tests.real_layout import Expect, contacts_member, write_zip
+
+    exp = Expect()
+    good = contacts_member(2, exp, "good.xml", picture_every=0)
+    bad = (
+        b'<?xml version="1.0"?>'
+        b'<!DOCTYPE contacts [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>'
+        b'<contacts xml:space="preserve"><contact xml:space="preserve">'
+        b'<OPFContactCopyFirstName xml:space="preserve">&xxe;</OPFContactCopyFirstName>'
+        b"</contact></contacts>"
+    )
+    archive = write_zip(tmp_path / "refused.olm", {"good.xml": good, "bad.xml": bad})
+    result, wb = run(tmp_path, archive)
+    assert result.error is None
+    assert result.outcome is not Outcome.SUCCESS
+    bad_result = next(m for m in result.members if m.path == "bad.xml")
+    assert bad_result.account is not None and not bad_result.account.counted
+    assert result.warnings_by_code, "refused member must populate _warnings"
+    assert len(table_rows(wb, "_warnings")) >= 1
+    member_rows = {r["path"]: r for r in table_rows(wb, "_members")}
+    assert member_rows["bad.xml"]["counted"] == "false"
