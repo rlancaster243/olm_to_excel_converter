@@ -58,7 +58,7 @@ for i in range(20000):
         body+=f"    <{P}EmailAddressList>\n"
         for t in random.sample(types,ne):
             a=f"{asc(f)}.{asc(l)}{random.randint(1,999)}@{random.choice(doms)}"
-            body+=f"      <emailAddress OPFContactEmailAddressAddress={quoteattr(a)} OPFContactEmailAddressName={quoteattr(f+' '+l)} OPFContactEmailAddressType={quoteattr(t)}/>\n"
+            body+=f"      <contactEmailAddress OPFContactEmailAddressAddress={quoteattr(a)} OPFContactEmailAddressName={quoteattr(f+' '+l)} OPFContactEmailAddressType={quoteattr(t)}/>\n"
         body+=f"    </{P}EmailAddressList>\n"
     out.append("  <contact>\n"+body+"  </contact>\n")
 out.append("</contacts>\n")

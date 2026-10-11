@@ -26,7 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="also write contact pictures as separate image files next to the workbook (default: metadata only, result is PARTIAL)",
     )
     convert.add_argument("--no-raw-extract", action="store_true", help="do not write unmapped values as raw rows (they are reported as lost) [ADR-008 PROPOSED]")
-    convert.add_argument("--max-raw-values", type=int, default=None, help="cap on raw rows per archive (default 5000000, ADR-008 PROPOSED placeholder)")
+    convert.add_argument("--max-raw-values", "--raw-extract-max-values", dest="max_raw_values", type=int, default=None, help="cap on raw rows per archive (default 5000000, ADR-008 PROPOSED placeholder; legacy name --raw-extract-max-values)")
     convert.add_argument("--overwrite", action="store_true", help="replace an existing workbook of the same name")
     convert.add_argument("--max-member-gib", type=float, default=None, help="allow archive members up to this many GiB uncompressed (default 2)")
     convert.add_argument("--max-ratio", type=float, default=None, help="allow a compression ratio up to this per member (default 100)")

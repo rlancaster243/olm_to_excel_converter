@@ -27,6 +27,7 @@ flowchart TD
 ```
 
 ## Boundaries and owners
+Implementation note (finding #13): `RecordEnvelope`/`iter_records` above describe the target contract; the built code uses `MemberSession.feed` with `MemberContext.mapped/unknown/lost/check_structural` and sweeps unsettled values with `ADAPTER_UNREPORTED` (see `core/member_context.py`, `core/convert.py`). Revisit when a second family needs shared projection.
 | Boundary | Producer → consumer | Contract | Failure/ownership |
 |---|---|---|---|
 | Upload | UI/CLI → coordinator | read-only file handles, opaque job IDs, limits | adapter owns no upload session state |

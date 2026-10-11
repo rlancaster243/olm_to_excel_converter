@@ -82,7 +82,7 @@ Semantics:
 - Raw values are as sensitive as canonical values: same cell policy, same logging exclusions.
 - Binary payload values that an adapter declares (for example contact pictures) are never written as raw rows, since cells are not a binary store. They are mapped (exported as files) or lost with `PICTURE_NOT_EXPORTED`. Unclaimed members have no adapter to declare payloads, so their text goes raw verbatim.
 
-Limits: the extractor uses the same hardened streaming parser, depth limits and quotas as adapters. A configurable `raw_extract_max_values` per archive caps raw rows. When the cap is reached partway through a member, that member is marked `raw_complete=false` with stop reason `RAW_EXTRACT_LIMIT`; every later unclaimed member still gets an `_raw_index` row with values written 0, `raw_complete=false`, stop reason `RAW_EXTRACT_LIMIT` and source values `uncounted` if it was not walked. No member drops out of the index. A malformed member keeps rows emitted before the parse error, is marked `raw_complete=false` and raises `RECORD_PARSE_ERROR`.
+Limits: the extractor uses the same hardened streaming parser, depth limits and quotas as adapters. A configurable `max_raw_values` per archive caps raw rows. When the cap is reached partway through a member, that member is marked `raw_complete=false` with stop reason `RAW_EXTRACT_LIMIT`; every later unclaimed member still gets an `_raw_index` row with values written 0, `raw_complete=false`, stop reason `RAW_EXTRACT_LIMIT` and source values `uncounted` if it was not walked. No member drops out of the index. A malformed member keeps rows emitted before the parse error, is marked `raw_complete=false` and raises `RECORD_PARSE_ERROR`.
 
 ## Contacts v1 sheet contract (provisional, evidence E09)
 Derived from one real export, Outlook version unknown. Adapters are selected by content, never by path or file name.
@@ -92,6 +92,7 @@ Derived from one real export, Outlook version unknown. Adapters are selected by 
 - Any element or attribute under a claimed record that is not listed below is an unknown field: it is written as a raw row linked by `record_key`, and the outcome is PARTIAL. Nothing is guessed.
 
 Identity: `record_key = <first 12 hex of archive sha256>/<member ordinal>/<record ordinal>`. `ExchangeID` appears on every contact in E09, but its stability across exports is unproven (U07), so it is a column, not the key.
+Empty semantics (finding #12): an element whose only content is `xml:space` yields one structural source value (the attribute), not zero and not an empty value; presence for `empty_fields` comes from that structural attribute, which stays structural and changes no counts. A field is listed in `empty_fields` only when its element exists but contributed no content value anywhere (cell, pictures or raw).
 
 Sheets:
 - `contacts`: one row per `contact`, across all contacts members (E09 had three). Columns: `record_key`, `source_member`, `contact_ordinal`, the 56 scalar columns below, `PrimaryCategory_Name`, `PrimaryCategory_BackgroundColor`, `empty_fields`. A scalar column name is the element name with a leading `OPFContactCopy` removed, else a leading `OPFContact` removed (`OPFContactCopyFirstName` becomes `FirstName`, `OPFContactExchangeID` becomes `ExchangeID`); if two names would collide, the verbatim element names are used. `empty_fields` lists scalar fields that are present but empty, since a blank cell cannot tell empty from absent. Presence is detected from the element itself: an element with no attributes yields an empty source value, and on the real layout, where every element carries `xml:space`, presence comes from that structural attribute (which stays structural and changes no counts). A present field is listed only if it had no content value at all, wherever that content went (cell, pictures or raw), so a field whose content went to raw is never called empty. Listed fields are joined with `; ` in column order. `ContactImage` is a scalar column, but a value that decodes as an image is a picture payload, not cell text (see Contact pictures).
@@ -124,7 +125,7 @@ Each XLSX includes `_manifest`, `_members` (one row per archive member: type, ad
 - No macro content, formula generation or external hyperlinks generated from untrusted payload by default.
 
 ## Completeness contract (count-conserving, not semantic)
-`seen = exported + failed + unsupported` at the agreed classification grain; per-family and per-record counters must reconcile, accounting for skipped nonrecords separately. Unknown archive members must be listed even if their semantics cannot be decoded. No blanket “all contents converted” promise when semantics are unknown.
+`seen = exported + failed + unsupported` at record/member grain; per-family and per-record counters must reconcile, accounting for skipped nonrecords separately. Unknown archive members must be listed even if their semantics cannot be decoded. No blanket “all contents converted” promise when semantics are unknown. The field-level rule below is the source-value grain of the same contract (finding #13): both must hold where they apply.
 Field-level count-conserving rule, per XML member and per family:
 `source_values == mapped + structural + raw + lost`
 Counts conserve source values; they do not prove semantic completeness. SUCCESS means every counted value was mapped or checked structural, never that every meaning was understood.
@@ -140,6 +141,7 @@ A member whose values could not be counted (not walked after a limit, or parse s
 
 ## Batch delivery
 Aggregate ZIP contains `manifest.json`, one deterministically named per-file workbook for each qualified downloadable result, optional per-file report JSON, opt-in contact picture files (ADR-010), and other extracted attachments only after explicit design approval. Name collision handling is stable and path-safe.
+Status (finding #13): `convert_many` and the aggregate manifest ZIP are not built; `convert` runs one archive at a time and a batch runs sequentially (W06).
 
 ## Compatibility
 Schema registry entries define exact fixtures and evidence, not universal claims. Contract changes to sheet names, columns, grain, interpretation or parser selection require versioning plus migration notes.

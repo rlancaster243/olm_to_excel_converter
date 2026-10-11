@@ -32,7 +32,7 @@ def sample_xml() -> bytes:
 @pytest.mark.parametrize(
     ("old", "new"),
     [
-        pytest.param(b"<emailAddress ", b"<contactEmailAddress ", id="T17-renamed-element"),
+        pytest.param(b"<contactEmailAddress ", b"<emailAddress ", id="T17-renamed-element"),
         pytest.param(b"<contacts>", b'<contacts xmlns="urn:x-olm:v2">', id="T18-root-namespace"),
     ],
 )

@@ -21,7 +21,7 @@ Protected assets: local filesystem, memory/CPU, private mail/contact content, ou
 | Unexpected host networking | offline default; dependency policy; scan for outbound calls | network-blocked integration tests |
 | Malformed encodings and dates | retain original lexemes and mark undecodable data, no silent defaults | encoding corpus |
 | Unsupported proprietary payload | mark UNSUPPORTED/PARTIAL and enumerate evidence | unknown-format tests |
-| Raw extract row explosion (many tiny nodes) | `raw_extract_max_values` quota, partitioned sheets, stop with RAW_EXTRACT_LIMIT, never silent truncation | node-dense synthetic fixture |
+| Raw extract row explosion (many tiny nodes) | `max_raw_values` quota, partitioned sheets, stop with RAW_EXTRACT_LIMIT, never silent truncation | node-dense synthetic fixture |
 | Raw output read as interpreted data | `raw_` sheet prefix, manifest flag, outcome never SUCCESS when any source value is raw or lost | workbook and UI warning tests |
 | Adapter overstates its own coverage | core walker counts source values independently; adapters only report mapped ordinals | under-reporting adapter fixture |
 | Record data hidden by declaring it structural | closed declarations in the registry with evidence; validators run by the core; per-declaration consumed and failed counts in `_manifest`; failed checks route to raw or lost | T26-T28: undeclared names never structural; bad values fail |
@@ -29,7 +29,7 @@ Protected assets: local filesystem, memory/CPU, private mail/contact content, ou
 | Exported image files opened by other software | residual risk, declared: the tool never renders or executes images, but viewers may; files stay opt-in | documented limitation |
 
 ## Failure taxonomy
-INPUT_INVALID, ARCHIVE_UNSAFE, RESOURCE_LIMIT, FORMAT_UNKNOWN, AMBIGUOUS_ADAPTER, RECORD_PARSE_ERROR, FIELD_LOSS_RISK, EXCEL_LIMIT, RAW_EXTRACT_LIMIT, RAW_EXTRACT_DISABLED, PICTURE_NOT_EXPORTED, STRUCTURAL_MISMATCH (warning), OUTPUT_IO, CANCELLED, INTERNAL_ERROR.
+INPUT_INVALID, ARCHIVE_UNSAFE, RESOURCE_LIMIT, FORMAT_UNKNOWN, AMBIGUOUS_ADAPTER, RECORD_PARSE_ERROR, FIELD_LOSS_RISK, EXCEL_LIMIT, RAW_EXTRACT_LIMIT, RAW_EXTRACT_DISABLED, PICTURE_NOT_EXPORTED, STRUCTURAL_MISMATCH (warning), ADAPTER_UNREPORTED (warning: adapter left a value unsettled, swept to raw), OUTPUT_IO, CANCELLED, INTERNAL_ERROR.
 Errors must include stable code, scope (archive/member/record), recoverability, corrective action and safe metadata; no raw personal data.
 
 ## Recovery and containment

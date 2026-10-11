@@ -44,7 +44,7 @@ def test_sample_structure_counts(sample_report: dict) -> None:
     assert xml["source_values"] == 241_487 and xml["roots"] == {"/contacts": 1}
     paths = xml["paths"]
     assert paths["/contacts/contact"]["elements"] == 20_000
-    emails = paths["/contacts/contact/OPFContactCopyEmailAddressList/emailAddress"]
+    emails = paths["/contacts/contact/OPFContactCopyEmailAddressList/contactEmailAddress"]
     assert (emails["elements"], emails["max_sibling_index"]) == (25_864, 3)
     assert emails["attributes"]["OPFContactEmailAddressType"] == 25_864
     assert paths["/contacts/contact/OPFContactCopyNotesPlain"]["values_over_cell_cap"] == 1
