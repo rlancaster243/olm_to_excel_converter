@@ -1,6 +1,6 @@
 # 08 — Execution Plan and Bounded Agent Handoff
 
-Status: PROPOSED, not executed. Implement in reviewable PRs, no direct unreviewed production writes.
+Status: W00 to W05 executed; Q2 passed on the product owner's export 2026-10-12 (E14). W06 to W10 are **out of scope** under ADR-012 (single run) and will not be built. They are kept below as the plan to reopen if the scope changes.
 
 ## Dependency sequence
 W00: Evidence and scope — consented real exports, fixtures metadata, confirm family scope, output example and privacy rules. Exit: U01/U02/U04 reduced and PRD reviewable.

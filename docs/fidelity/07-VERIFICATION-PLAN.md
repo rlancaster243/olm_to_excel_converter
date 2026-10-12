@@ -1,6 +1,6 @@
 # 07 — Independent Verification Contract
 
-Status: test design before implementation. No tests have been executed under this plan.
+Status: synthetic suite executed in CI (210 tests on `ff29a2d`). Real-archive Q2 count check passed 2026-10-12 for one export (E14); Q3 to Q5 are out of scope under ADR-012.
 
 ## Oracle design
 Golden expected outputs are independently derived from real Outlook sample inspection and user-approved field mapping. A parser's own output is not its own oracle. Preserve source export app version, fixture SHA-256, archive metadata, supported family selection and explicit expected record/value counts.
