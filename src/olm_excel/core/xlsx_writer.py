@@ -76,6 +76,7 @@ class Table:
         partitioned: bool,
         max_rows: int,
         spill: bool = False,
+        header_bold: bool = False,
     ):
         self._writer = writer
         self._name = name
@@ -84,6 +85,8 @@ class Table:
         self._spill = spill  # first sheet keeps `name`; overflow goes to name_0002, name_0003, ...
         self._max_rows = max_rows
         self.partition_names: list[str] = []
+        self._header_format = writer._bold() if header_bold and header else None
+        self._sheets: list = []
         self._sheet = None
         self._row = 0
         self._new_sheet()
@@ -104,11 +107,12 @@ class Table:
         else:
             name = self._name
         self._sheet = self._writer._add_worksheet(name)
+        self._sheets.append(self._sheet)
         self.partition_names.append(name)
         self._writer.sheet_rows[name] = 0
         self._row = 0
         if self._header:
-            self._write(self._header)
+            self._write(self._header, self._header_format)
 
     def append(self, row: Sequence[str]) -> None:
         if self._row >= self._max_rows:
@@ -117,13 +121,31 @@ class Table:
             self._new_sheet()
         self._write(row)
 
-    def _write(self, row: Sequence[str]) -> None:
+    def layout(self, widths: Sequence[float], *, hidden: Iterable[int] = (), freeze: tuple[int, int] | None = None,
+               autofilter: bool = False, active: bool = False) -> None:
+        """Presentation only: column widths, hidden columns, frozen panes and a filter on every partition.
+
+        Safe to call again before close; the last call wins. Cell values are never touched.
+        """
+        hide = set(hidden)
+        for number, sheet in enumerate(self._sheets):
+            for col, width in enumerate(widths):
+                sheet.set_column(col, col, width, None, {"hidden": col in hide})
+            if freeze is not None:
+                sheet.freeze_panes(*freeze)
+            last_row = self._row if number == len(self._sheets) - 1 else self._max_rows
+            if autofilter and widths and last_row > 1:
+                sheet.autofilter(0, 0, last_row - 1, len(widths) - 1)
+        if active and self._sheets:
+            self._sheets[0].activate()
+
+    def _write(self, row: Sequence[str], cell_format=None) -> None:
         for col, value in enumerate(row):
             if not isinstance(value, str):
                 raise TypeError(f"cell values must be str, got {type(value).__name__}")
             if len(value) > EXCEL_CELL_MAX_UTF16 // 2 and utf16_len(value) > EXCEL_CELL_MAX_UTF16:
                 raise ConversionError(ErrorCode.EXCEL_LIMIT, "cell exceeds 32,767 UTF-16 units; chunk it first", scope="workbook")
-            status = self._sheet.write_string(self._row, col, value)
+            status = self._sheet.write_string(self._row, col, value, cell_format)
             if status != 0:  # -2 would mean XlsxWriter truncated the value
                 raise ConversionError(ErrorCode.EXCEL_LIMIT, f"write_string returned {status}", scope="workbook")
         self._row += 1
@@ -141,6 +163,12 @@ class WorkbookWriter:
         self.sheet_rows: dict[str, int] = {}  # rows written per sheet, header included
         self._workbook = xlsxwriter.Workbook(str(self.partial), _WORKBOOK_OPTIONS)
         self._closed = False
+        self._bold_format = None
+
+    def _bold(self):
+        if self._bold_format is None:
+            self._bold_format = self._workbook.add_format({"bold": True})
+        return self._bold_format
 
     def add_table(
         self,
@@ -149,9 +177,10 @@ class WorkbookWriter:
         *,
         partitioned: bool = False,
         spill: bool = False,
+        header_bold: bool = False,
     ) -> Table:
         """Add a sheet. ``partitioned`` numbers every sheet (raw_0001); ``spill`` only numbers overflow."""
-        return Table(self, name, header, partitioned, self._max_rows, spill)
+        return Table(self, name, header, partitioned, self._max_rows, spill, header_bold)
 
     def _add_worksheet(self, name: str):
         _check_sheet_name(name)

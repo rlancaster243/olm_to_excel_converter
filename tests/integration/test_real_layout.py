@@ -712,3 +712,38 @@ def test_refused_member_is_ledgered_not_silent(tmp_path: Path) -> None:  # findi
     assert member_rows["bad.xml"]["counted"] == "false"
     manifest = {r["key"]: r["value"] for r in table_rows(wb, "_manifest")}
     assert "bad.xml:" in manifest.get("refused_members", "")
+
+
+def test_contact_list_is_a_readable_uncounted_view_of_every_contact(tmp_path: Path, built) -> None:  # 04 Contact list view
+    archive, exp = built
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    plain, plain_wb = run(tmp_path / "a", archive)
+    result, wb = run(tmp_path / "b", archive, export_images=True)
+    assert result.outcome is Outcome.SUCCESS
+
+    view = table_rows(wb, "Contact list")
+    contacts = table_rows(wb, "contacts")
+    assert [r["Source ref"] for r in view] == [r["record_key"] for r in contacts]  # one row per contact, same order
+    assert len(view) == exp.total_contacts
+
+    first = view[0]  # contact 1: Person 1, one list container with 2 addresses and 1 default container
+    assert first["Name"] == "Person 1" and first["Company"] == "Café Müller & Söhne 東京"
+    assert first["Email 1"] == "p1.0.0@example.test"  # the default address leads
+    assert first["Notes"] == 'note 1, with "quotes" & commas'  # NotesPlain, not the HTML Notes
+    with_picture = [r for r in view if r["Picture"]]
+    assert len(with_picture) == exp.pictures and all(r["Picture"].endswith(".png") for r in with_picture)
+    assert all(not r["Picture"] for r in table_rows(plain_wb, "Contact list"))  # no file without --export-images
+
+    # The view is presentation only: every source value is still settled exactly once, on the audited sheets.
+    assert result.totals.source_values == result.totals.mapped + result.totals.structural
+    assert plain.totals.mapped + plain.totals.lost == result.totals.mapped
+
+    book = openpyxl.load_workbook(wb)
+    sheet = book["Contact list"]
+    assert book.active.title == "Contact list"
+    assert sheet.freeze_panes == "B2" and sheet.auto_filter.ref == f"A1:AL{exp.total_contacts + 1}"
+    assert sheet["A1"].font.b
+    header = [c.value for c in sheet[1]]
+    hidden = {header[i - 1] for d in sheet.column_dimensions.values() if d.hidden for i in range(d.min, d.max + 1)}  # ranges merge
+    assert "Radio phone" in hidden and "Mobile" not in hidden and "Email 1" not in hidden
