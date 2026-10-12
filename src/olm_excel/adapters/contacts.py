@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from typing import Protocol
 
 from olm_excel.adapters.base import split_path
+from olm_excel.adapters.contact_view import VIEW_HEADER, VIEW_WIDTHS, view_row
 from olm_excel.core.discovery import ProbeResult, XmlSignature
 from olm_excel.core.errors import ErrorCode
 from olm_excel.core.member_context import MemberContext
@@ -85,6 +86,7 @@ PICTURES_HEADER = (
 )
 LONG_TEXT_HEADER = ("record_key", "field", "chunk", "value")
 
+VIEW_SHEET = "Contact list"  # readable view, not counted (04, Contact list view)
 DEFAULT_MAX_PICTURE_BYTES = 128 * 1024**2
 _WHITESPACE = re.compile(r"\s+")
 
@@ -178,6 +180,8 @@ class ContactsAdapter:
         self.picture_sink = picture_sink
         self.max_picture_bytes = max_picture_bytes
         self._writer: WorkbookWriter | None = None
+        self.view: Table | None = None
+        self._view_filled = [False] * len(VIEW_HEADER)
         self.contacts: Table | None = None
         self.emails: Table | None = None
         self.categories: Table | None = None
@@ -217,6 +221,7 @@ class ContactsAdapter:
 
     def prepare(self, writer: WorkbookWriter) -> None:
         self._writer = writer
+        self.view = writer.add_table(VIEW_SHEET, VIEW_HEADER, spill=True, header_bold=True)
         self.contacts = writer.add_table("contacts", CONTACTS_HEADER, spill=True)
         self.emails = writer.add_table("contact_emails", EMAILS_HEADER, spill=True)
         self.categories = writer.add_table("contact_categories", CATEGORIES_HEADER, spill=True)
@@ -231,6 +236,17 @@ class ContactsAdapter:
 
     def start(self, ctx: MemberContext) -> _Session:
         return _Session(self, ctx)
+
+    def add_view_row(self, row: tuple[str, ...]) -> None:
+        self.view.append(row)
+        for col, value in enumerate(row):
+            if value:
+                self._view_filled[col] = True
+
+    def layout_view(self) -> None:
+        """Hide columns no contact uses, freeze the header and name, add a filter, open on this sheet."""
+        hidden = [col for col, filled in enumerate(self._view_filled) if not filled]
+        self.view.layout(VIEW_WIDTHS, hidden=hidden, freeze=(1, 1), autofilter=True, active=True)
 
 
 class _Session:
@@ -344,7 +360,16 @@ class _Session:
             ))
         for (container, idx), text in rec.lists.items():
             a.lists.append((key, container, str(idx), fit(key, f"contact_lists/{container}/{idx}", text)))
-        self._flush_pictures(rec, key)
+        exported = self._flush_pictures(rec, key)
+        a.add_view_row(view_row(
+            record_key=key,
+            scalars=rec.scalars,
+            emails=[(container, attrs) for (container, _), attrs in rec.emails.items()],
+            categories=[rec.categories[i].get(CATEGORY_ATTRS[0], "") for i in sorted(rec.categories)],
+            primary_category=rec.primary.get(CATEGORY_ATTRS[0], ""),
+            children=[text for (container, i), text in sorted(rec.lists.items()) if container == LIST_CONTAINERS[0]],
+            picture_file=exported[0] if exported else "",
+        ))
         self.records_seen += 1
         ctx.end_record(key)
         self._rec = None
@@ -359,8 +384,10 @@ class _Session:
             self._a.long_text.append((key, label, str(number), chunk))
         return first
 
-    def _flush_pictures(self, rec: _Record, key: str) -> None:
+    def _flush_pictures(self, rec: _Record, key: str) -> list[str]:
+        """Write picture rows; return the exported file paths in picture order."""
         ctx, a = self._ctx, self._a
+        files: list[str] = []
         declared = ""
         if len(rec.pictures) == 1 and len(rec.picture_types) == 1:  # pair only exactly one of each
             declared = rec.picture_types[0].value
@@ -396,8 +423,11 @@ class _Session:
             ))
             if exported:
                 ctx.mapped(picture)
+                files.append(exported)
             else:
                 ctx.lost(picture, ErrorCode.PICTURE_NOT_EXPORTED)
+        return files
 
     def finish(self) -> None:
         self._flush()
+        self._a.layout_view()
