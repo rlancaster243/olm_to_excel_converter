@@ -100,6 +100,13 @@ Benefit: no timezone or locale guessing (E09 does not show the date format); exa
 Cost: users sort and filter dates as text until a parsed column exists.
 Revisit: the real date lexemes are confirmed unambiguous and users ask for date cells.
 
+## ADR-012 - Scope is a single run on one export
+Status: **ACCEPTED** 2026-10-12, product owner Russell ("the scope of this system is a one time run").
+Decision: the system exists to convert the product owner's own contacts export (E09) once. That run took place 2026-10-12 and returned SUCCESS (E14). W06 to W10 and phases P2 to P4 are out of scope and will not be built.
+Benefit: no investment in batch, UI, further families, hardening or release work that nobody will use.
+Cost: the code is qualified for one export only (E09, E14). Known limits stay unfixed: the provenance log grows with archive size (about 316 bytes per value, measured 2026-10-12), there is no wall-clock parse limit (N03), and the `_provenance` and `_columns` sheets are not defined in 04. None of these affected the single run.
+Revisit: any second export, another Outlook version, or another record family. Each reopens W06 to W08 and needs its own Q2-style count check, because E14 does not transfer to them.
+
 ## Alternatives matrix
 | Choice | Simplicity | Multi-family evolution | Correctness observability | Main risk |
 |---|---|---|---|---|

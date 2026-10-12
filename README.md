@@ -11,6 +11,8 @@ This repository will hold an **Outlook for Mac (OLM) → Excel** converter (cont
 
 **Status:** converts contacts and categories from the one real OLM layout seen so far (evidence E09, one Outlook version). Other record families (mail, calendar, tasks) are not supported: they are listed in the workbook and their values are kept as raw rows, never guessed.
 
+**Scope:** a single run on the owner's own contacts export (ADR-012). That run completed 2026-10-12 with SUCCESS and every source value accounted for (evidence E14). The code is not qualified for other exports or Outlook versions, and no further features are planned.
+
 ## Development
 
 Python 3.11+. Runtime dependencies are pinned in `pyproject.toml`: `defusedxml` (hardened XML) and `xlsxwriter` (string-typed cells). `openpyxl` is test-only and is never used to write workbooks.

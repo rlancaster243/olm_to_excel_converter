@@ -1,6 +1,6 @@
 # OLM to Excel — Engineering Fidelity Dossier
 
-Status: **Accepted** target architecture for contacts v1 (Russell 2026-10-11); code in [PR #9](https://github.com/rlancaster243/olm_to_excel_converter/pull/9). Date: 2026-10-08 dossier; decisions 2026-10-11.
+Status: **Accepted** target architecture for contacts v1 (Russell 2026-10-11); code in [PR #9](https://github.com/rlancaster243/olm_to_excel_converter/pull/9). Scope is a single run on one export (ADR-012), completed 2026-10-12 with SUCCESS (E14). Date: 2026-10-08 dossier; decisions 2026-10-11.
 Scope: `rlancaster243/olm_to_excel_converter`. Authority: ADRs in [05-DECISIONS-AND-TRADEOFFS.md](05-DECISIONS-AND-TRADEOFFS.md) govern implementation.
 
 ## Mission

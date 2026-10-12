@@ -1,6 +1,6 @@
 # 02 — Product Contract / PRD
 
-Status: **Accepted** for contacts v1 vertical slice and standalone repo boundary (ADR-001, Russell 2026-10-11). Broader record families remain TARGET per phases P1–P4.
+Status: **Accepted** for contacts v1 vertical slice and standalone repo boundary (ADR-001, Russell 2026-10-11). Scope narrowed 2026-10-12 to a single run on one export (ADR-012); that run returned SUCCESS (E14). Phases P2 to P4 are out of scope.
 
 ## Users and jobs
 Primary: person migrating or analyzing Outlook data with Excel. Secondary: technical operator running repeatable batch conversion. Primary job: select 1..N OLM archives, understand coverage, obtain usable Excel files without manual format debugging.
