@@ -31,6 +31,13 @@ def build_parser() -> argparse.ArgumentParser:
     convert.add_argument("--max-member-gib", type=float, default=None, help="allow archive members up to this many GiB uncompressed (default 2)")
     convert.add_argument("--max-ratio", type=float, default=None, help="allow a compression ratio up to this per member (default 100)")
     convert.add_argument("--debug", action="store_true", help="show a traceback if something unexpected fails")
+    audit = sub.add_parser(
+        "audit-phones",
+        help="test whether phone values are altered: compare the archive with a workbook (counts only, no values)",
+    )
+    audit.add_argument("archive", type=Path, help="the OLM archive (read-only)")
+    audit.add_argument("--workbook", type=Path, default=None, help="a workbook to compare against; without it only the archive's phone shapes are counted")
+    audit.add_argument("-o", "--output", type=Path, default=Path("phone-audit.json"), help="report path (aggregate counts only)")
     profile = sub.add_parser(
         "profile",
         help="write a structure-only report of an archive (no values); run it where the archive lives",
@@ -43,6 +50,46 @@ def build_parser() -> argparse.ArgumentParser:
         help="keep real folder and file names instead of redacting them (may reveal account addresses)",
     )
     return parser
+
+
+def _run_audit_phones(args: argparse.Namespace) -> int:
+    from olm_excel.core.errors import ConversionError
+    from olm_excel.core.phone_audit import audit_phones
+
+    def progress(n: int, total: int) -> None:
+        if n == total or n % 500 == 0:
+            print(f"\raudit member {n}/{total}", end="", file=sys.stderr, flush=True)
+
+    try:
+        report = audit_phones(args.archive, args.workbook, progress=progress)
+    except ConversionError as exc:
+        print(f"olm-excel: {exc}", file=sys.stderr)
+        return 1
+    print(file=sys.stderr)
+    args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    src = report["source"]
+    ni = src["numeric_inference"]
+    print(f"source: {src['phone_values']} phone values in {src['records']} contacts")
+    print(f"  numeric inference would alter {ni['would_alter']} ({ni['would_alter_pct']}%): {ni['by_cause']}")
+    print(f"  start with = + - @ : {src['shape_counts'].get('formula_prefix', 0)} ({src['formula_prefix_pct']}%)")
+    for column, risk in src["risk_by_field"].items():
+        if risk["would_alter"] or risk["formula_prefix"]:
+            print(f"    {column}: {risk['values']} values, would alter {risk['would_alter']} ({risk['would_alter_pct']}%), start with = + - @ {risk['formula_prefix']} ({risk['formula_prefix_pct']}%)")
+    exit_code = 0
+    for label, part in (report.get("workbook") or {}).items():
+        if part.get("sheet_missing"):
+            print(f"{label}: sheet not found")
+            exit_code = 5
+            continue
+        cells = part["cells"]
+        print(f"{label}: exact {cells.get('exact', 0)} ({part['exact_pct_of_source_phone_values']}%); not exact: "
+              + (", ".join(f"{k} {v}" for k, v in cells.items() if k != "exact") or "none"))
+        if part["quote_prefix"]:
+            print(f"  quote prefix: {part['quote_prefix']}")
+        if any(k != "exact" for k in cells):
+            exit_code = 5
+    print(f"Report written to {args.output}. It contains counts only: review it before sharing.")
+    return exit_code
 
 
 def _run_profile(args: argparse.Namespace) -> int:
@@ -161,6 +208,8 @@ def _run_convert(args: argparse.Namespace) -> int:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.command == "audit-phones":
+        return _run_audit_phones(args)
     if args.command == "profile":
         return _run_profile(args)
     if args.command == "convert":

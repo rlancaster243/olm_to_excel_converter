@@ -63,3 +63,7 @@ Run it on the machine that holds the archive, then read the report before sharin
 ```
 
 `--show-names` keeps real folder and file names; leave it off unless you are sure they are not personal.
+
+## Checking phone numbers
+
+`olm-excel audit-phones "<archive>" --workbook "<workbook.xlsx>" -o phone-audit.json` compares every phone value in the archive with the workbook cell for the same contact (matched by `record_key`, on both `contacts` and `Contact list`). It prints counts only, never a phone value, name or file name: how many cells are exact, and for the rest whether the cell is trimmed, truncated, different, a number, a formula or missing. It also counts how many source values have a shape that a number-inferring consumer would alter (leading plus, leading zero, more than 15 digits) and how many text cells carry Excel's quote prefix. Without `--workbook` it only counts the archive's phone shapes. Exit code 5 means some cell is not exact. The experiment this serves is in `docs/fidelity/09-OPERATIONS-AND-RECONCILIATION.md`, runbook 8.
