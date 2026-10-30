@@ -34,7 +34,9 @@ def sheet_parts(archive: zipfile.ZipFile) -> dict[str, str]:
     with archive.open("xl/_rels/workbook.xml.rels") as fh:
         for _, el in SafeET.iterparse(fh):
             if el.tag == f"{_REL}Relationship":
-                rels[el.get("Id")] = posixpath.normpath(posixpath.join("xl", el.get("Target")))
+                target = el.get("Target")
+                # Excel writes relative targets ("worksheets/sheet1.xml"); some writers use absolute ones ("/xl/...").
+                rels[el.get("Id")] = target.lstrip("/") if target.startswith("/") else posixpath.normpath(posixpath.join("xl", target))
     parts: dict[str, str] = {}
     with archive.open("xl/workbook.xml") as fh:
         for _, el in SafeET.iterparse(fh):
